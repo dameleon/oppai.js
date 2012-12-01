@@ -1,11 +1,12 @@
 /**
  * Oppai.js
  *
- * @name    oppai.js
- * @author  kei takahashi (twitter@damele0n)
- * @mail    dameleon[at]gmail.com
- * @url     https://github.com/dameleon/oppai.js
- * @license Creative Commons Attribution-ShareAlike 2.1 Japan License
+ * @name     oppai.js
+ * @author   kei takahashi (twitter@damele0n)
+ * @mail     dameleon[at]gmail.com
+ * @url      https://github.com/dameleon/oppai.js
+ * @license  Creative Commons Attribution-ShareAlike 2.1 Japan License
+ * @required tt.js (@see https://github.com/dameleon/tt.js)
  */
 
 ;(function(global, document, tt, undefined) {
