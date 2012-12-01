@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<link rel="stylesheet" href="css/normalize.css">
+<style>
+html, body {
+    background: #000;
+}
+#viewer {
+}
+</style>
+<script src="js/tt.min.js"></script>
+<script src="js/oppai.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    /*
+    // pai_01.jpg
+    var left = {
+            vertex: [432, 786],
+            rect:   [[381, 707], [500, 852]]
+        },
+        right = {
+            vertex: [551, 783],
+            rect:   [[500, 707], [604, 852]]
+        };
+
+    // pai_02.jpg
+    var left = {
+            vertex: [488, 536],
+            rect:   [[427, 451], [555, 584]]
+        },
+        right = {
+            vertex: [632, 467],
+            rect:   [[563, 402], [667, 518]]
+        };
+    */
+
+    // pai_03.jpg
+    var left = {
+            vertex: [247, 423],
+            rect:   [[207, 399], [299, 475]]
+        },
+        right = {
+            vertex: [397, 431],
+            rect:   [[343, 399], [432, 483]]
+        };
+    oppai("img/pai_03.jpg", "#viewer", left, right);
+}, false);
+</script>
+</head>
+<body>
+<div id="viewer"></div>
+</body>
+</html>
