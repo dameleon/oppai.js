@@ -6,6 +6,8 @@ oppai.js
 
 ## samples
 
+iPhoneでお楽しみください。
+
  - [http://jsrun.it/damele0n/h8BW](http://jsrun.it/damele0n/h8BW)
  - [http://jsrun.it/damele0n/utia](http://jsrun.it/damele0n/utia)
  - [http://jsrun.it/damele0n/pVrX](http://jsrun.it/damele0n/pVrX)
