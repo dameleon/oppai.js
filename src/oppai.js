@@ -1,16 +1,4 @@
-/**
- * Oppai.js
- *
- * @name     oppai.js
- * @author   kei takahashi (twitter@damele0n)
- * @mail     dameleon[at]gmail.com
- * @url      https://github.com/dameleon/oppai.js
- * @version  0.0.1-beta
- * @license  Creative Commons Attribution-ShareAlike 2.1 Japan License
- * @required tt.js (@see https://github.com/dameleon/tt.js)
- */
-
-;(function(global, document, tt, undefined) {
+;(function(global, document, undefined) {
     var NS = "oppai",
         supportTouch = ("ontouchstart" in global),
         events = {
@@ -18,7 +6,7 @@
             touchMove:  supportTouch ? "touchmove"  : "mousemove",
             touchEnd:   supportTouch ? "touchend"   : "mouseup",
         },
-        isSmartphone = (tt.env.android || tt.env.ios),
+        isSmartphone = supportTouch,
 
         // easing function from JSTween
         // @name   JSTween
@@ -55,24 +43,24 @@
         };
 
     global[NS] = global[NS] || function(img_path, viewer_selector, set_1, set_2) {
-        var viewer = tt(viewer_selector),
+        var viewer = document.querySelector(viewer_selector),
             img = new Image(),
             op_1, op_2;
 
-        viewer.on(events.touchMove, function(ev) {
+        viewer.addEventListener(events.touchMove, function(ev) {
             ev.preventDefault();
         });
         img.onload = function() {
-            viewer.css({
-                "position":   "relative",
-                "margin":     "0",
-                "width":      img.width + "px",
-                "height":     img.height + "px",
-                "background": "url(" + img_path + ") no-repeat left top",
-                "zoom":       isSmartphone ? "0.5" : "1"
-            });
-            op_1 = new Oppai(img, viewer.get(), set_1.vertex, set_1.rect);
-            op_2 = new Oppai(img, viewer.get(), set_2.vertex, set_2.rect);
+            with (viewer.style) {
+                position = 'relative';
+                margin = '0';
+                width = img.width + 'px';
+                height = img.height + 'px';
+                background = 'url(' + img_path + ') no-repeat left top';
+                zoom = isSmartphone ? '0,5' : '1';
+            }
+            op_1 = new Oppai(img, viewer, set_1.vertex, set_1.rect);
+            op_2 = new Oppai(img, viewer, set_2.vertex, set_2.rect);
         };
         img.src = img_path;
     };
@@ -127,17 +115,17 @@
             // set canvas element
             this.canvas.width = this.width;
             this.canvas.height = this.height;
-            tt(this.canvas).css({
-                "position": "absolute",
-                "top": rect[0][1] + "px",
-                "left": rect[0][0] + "px"
-            });
+            var canvasStyle = this.canvas.style;
+
+            canvasStyle.position = 'absolute';
+            canvasStyle.top = rect[0][1] + 'px';
+            canvasStyle.left = rect[0][0] + 'px';
 
             // binding events
             this.canvas.addEventListener(events.touchStart, this, false);
             this.canvas.addEventListener(events.touchMove,  this, false);
             this.canvas.addEventListener(events.touchEnd,   this, false);
-            if (tt.env.ios) {
+            if ('ondevicemotion' in global) {
                 global.addEventListener("devicemotion", this, false);
             }
 
@@ -368,4 +356,4 @@
         return supportTouch ? event.changedTouches[0][name] : event[name];
     }
 
-})(this, document, this.tt);
+})(this, document, void 0);
