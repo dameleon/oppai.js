@@ -1,58 +1,83 @@
+;(function(global, undefined) {
+var DEBUG = false;
+var document = global.document;
+var env = __getEnv(global.navigation.userAgent);
+var events = {
+        touchStart: env.isTouchDevice && "touchstart" || "mousedown",
+        touchMove:  env.isTouchDevice && "touchmove"  || "mousemove",
+        touchEnd:   env.isTouchDevice && "touchend"   || "mouseup"
+};
+var raf = global.requestAnimationFrame ||
+          global.webkitRequestAnimationFrame ||
+          global.mozRequestAnimationFrame ||
+          global.oRequestAnimationFrame ||
+          global.msRequestAnimationFrame ||
+          (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
+
 /**
- * Oppai.js
- *
- * @name     oppai.js
- * @author   kei takahashi (twitter@damele0n)
- * @mail     dameleon[at]gmail.com
- * @url      https://github.com/dameleon/oppai.js
- * @version  0.0.1-beta
- * @license  Creative Commons Attribution-ShareAlike 2.1 Japan License
- * @required tt.js (@see https://github.com/dameleon/tt.js)
+ * @param {String|HTMLCanvasElement} canvas
+ * @param {String} imagePath
+ * @param {Object} opps[]
+ * @param {Array}  opps[].vertex     [x, y]
+ * @param {Array}  opps[].area_coods [[x, y], [x, y], ...]
  */
+function Oppai() {
+    var that = this;
+    var args = [].slice.call(arguments);
 
-;(function(global, document, tt, undefined) {
-    var NS = "oppai",
-        supportTouch = ("ontouchstart" in global),
-        events = {
-            touchStart: supportTouch ? "touchstart" : "mousedown",
-            touchMove:  supportTouch ? "touchmove"  : "mousemove",
-            touchEnd:   supportTouch ? "touchend"   : "mouseup",
-        },
-        isSmartphone = (tt.env.android || tt.env.ios),
+    this.canvas = __getCanvas(args.shift());
+    this.imgPath = args.shift();
+    this._opps = args;
+    this.hooters = [];
+    this._loadImage(function() {
+        that._initHooters();
+    });
+}
 
-        // easing function from JSTween
-        // @name   JSTween
-        // @author Marco Wolfsheimer
-        // @url    http://www.jstween.org/
-        easingFunctions = {
-            linear:  function(t, b, c, d) {
-                return c * t / d + b;
-            },
-            bounseout: function(t, b, c, d) {
-                if ((t /= d) < (1 / 3)) {
-					return c * (10.5625 * t * t) + b;
+Oppai.prototype = {
+    constructor: Oppai,
+    _initHooters: ,
+    _loadImage: _loadImage
+};
 
-				} else if (t < (2 / 3)) {
-					return c * (10.5625 * (t -= (1.5 / 2.75)) * t + 0.75) + b;
+function _initHooters() {
+    var opps = this._oops;
+    var canvas = this.canvas;
+    var image = this.image;
 
-				} else if (t < (2.5 / 3)) {
-					return c * (10.5625 * (t -= (2.25 / 2.75)) * t + 0.9375) + b;
+    for (var i = 0, opp; opp = args[i]; i++) {
+        this.hooters.push(new Opp(canvas, image, opp));
+    }
+}
 
-				} else {
-					return c * (10.5625 * (t -= (2.625 / 2.75)) * t + 0.984375) + b;
-				}
-            }
-        };
+function _loadImage(callback) {
+    var image = this.image = new Image();
 
-    global.requestAnimationFrame =
-        global.requestAnimationFrame ||
-        global.webkitRequestAnimationFrame ||
-        global.mozRequestAnimationFrame ||
-        global.oRequestAnimationFrame ||
-        global.msRequestAnimationFrame ||
-        function(callback) {
-            global.setTimeout(callback, 1000 / 60);
-        };
+    image.onload = callback;
+    image.onerror = function() {
+        throw new Error('');
+    };
+    image.src = this.imgPath;
+}
+
+function __getCanvas(canvas) {
+    var element;
+
+    if (typeof canvas === 'string') {
+        element = document.querySelector(canvas);
+        if (!element) {
+            throw new Error('');
+        }
+    } else if (canvas && (canvas.tagName.toLowerCase() === 'canvas')) {
+        element = canvas;
+    } else {
+        throw new Error('');
+    }
+    return element;
+}
+
+    global.Oppai = global.Oppai || Oppai;
+
 
     global[NS] = global[NS] || function(img_path, viewer_selector, set_1, set_2) {
         var viewer = tt(viewer_selector),
@@ -368,4 +393,4 @@
         return supportTouch ? event.changedTouches[0][name] : event[name];
     }
 
-})(this, document, this.tt);
+})(this.self || global, void 0);
