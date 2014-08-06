@@ -1,398 +1,151 @@
 ;(function(global, undefined) {
-var DEBUG = false;
-var document = global.document;
-var env = __getEnv(global.navigation.userAgent);
-var events = {
-        touchStart: env.isTouchDevice && "touchstart" || "mousedown",
-        touchMove:  env.isTouchDevice && "touchmove"  || "mousemove",
-        touchEnd:   env.isTouchDevice && "touchend"   || "mouseup"
-};
-var raf = global.requestAnimationFrame ||
-          global.webkitRequestAnimationFrame ||
-          global.mozRequestAnimationFrame ||
-          global.oRequestAnimationFrame ||
-          global.msRequestAnimationFrame ||
-          (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
+
+if (!global.Oppai) {
+    throw new Error('Undefined objecct: "Oppai"');
+}
 
 /**
- * @param {String|HTMLCanvasElement} canvas
- * @param {String} imagePath
- * @param {Object} opps[]
- * @param {Array}  opps[].vertex     [x, y]
- * @param {Array}  opps[].area_coods [[x, y], [x, y], ...]
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {HTMLCanvasElement} image
+ * @param {Object} opp
+ * @param {Array}  opp.vertex     [x, y]
+ * @param {Array}  opp.area_coods [[x, y], [x, y], ...]
  */
-function Oppai() {
-    var that = this;
-    var args = [].slice.call(arguments);
+function Breast(ctx, image, opp) {
+    var roundCoords = opp.round_coords;
+    var roundPoints;
 
-    this.canvas = __getCanvas(args.shift());
-    this.imgPath = args.shift();
-    this._opps = args;
-    this.hooters = [];
-    this._loadImage(function() {
-        that._initHooters();
-    });
+    this.ctx = ctx;
+    this.image = image;
+    this.vertexPoint = new Point(opp.vertex[0], opp.vertex[1]);
+    this.roundPoints = roundPoints = [];
+    for (var i = 0, coord; coord = roundCoords[i]; i++) {
+        roundPoints.push(new Point(coord[0], coord[1]));
+    }
+    this.draw();
 }
 
-Oppai.prototype = {
-    constructor: Oppai,
-    _initHooters: _initHooters,
-    _loadImage: _loadImage
+Breast.prototype = {
+    constructor: Breast,
+    update: _update,
+    draw: _draw,
+    drawTriangle: _drawTriangle,
 };
 
-global.Oppai = Oppai;
+function _update() {
 
-function _initHooters() {
-    var opps = this._oops;
-    var canvas = this.canvas;
-    var image = this.image;
+}
 
-    for (var i = 0, opp; opp = args[i]; i++) {
-        this.hooters.push(new Oppai.Breast(canvas, image, opp));
+function _draw() {
+    var that = this;
+    var vertexPoint =  that.vertexPoint;
+    var roundPoints = that.roundPoints;
+    var rp, nextRp;
+    var i = 0, j;
+
+    for (; rp = roundPoints[i]; i++) {
+        nextRp = roundPoints[i + 1] || roundPoints[0];
+        that.drawTriangle(rp, nextRp, vertexPoint);
+        console.log(rp, nextRp, vertexPoint);
     }
 }
 
-function _loadImage(callback) {
-    var image = this.image = new Image();
+function _drawTriangle(p0, p1, p2) {
+    var ctx = this.ctx;
+    var img = this.image;
+    var imgWidth = img.width;
+    var imgHeight = img.height;
 
-    image.onload = callback;
-    image.onerror = function() {
-        throw new Error('');
-    };
-    image.src = this.imgPath;
+    // 各ポイントが動いている現在の座標系
+    var p0coord = p0.getCurrentXY();
+    var p1coord = p1.getCurrentXY();
+    var p2coord = p2.getCurrentXY();
+    var p0x = p0coord.x;
+    var p0y = p0coord.y;
+    var p1x = p1coord.x;
+    var p1y = p1coord.y;
+    var p2x = p2coord.x;
+    var p2y = p2coord.y;
+
+    var ax = p1x - p0x;
+    var ay = p1y - p0y;
+    var bx = p2x - p0x;
+    var by = p2y - p0y;
+
+    // uv座標
+    var uvAx = (p1.x - p0.x);
+    var uvAy = (p1.y - p0.y);
+    var uvBx = (p2.x - p0.x);
+    var uvBy = (p2.y - p0.y);
+
+    var m = new MatrixUtil(uvAx, uvAy, uvBx, uvBy);
+    var mInvert = m.getInvert();
+
+    if (!mInvert) {
+        return;
+    }
+    var a = mInvert.a * uvAx + mInvert.b * uvBx;
+    var b = mInvert.c * uvAx + mInvert.d * uvBx;
+    var c = mInvert.a * uvAy + mInvert.b * uvBy;
+    var d = mInvert.c * uvAy + mInvert.d * uvBy;
+
+    // 描画
+    with (ctx) {
+        save();
+        beginPath();
+        moveTo(p0x, p0y);
+        lineTo(p1x, p1y);
+        lineTo(p2x, p2y);
+        closePath();
+        clip();
+        transform(a, b, c, d,
+            p0x - (a * p0.x + c * p0.y),
+            p0y - (b * p0.x + d * p0.y));
+        drawImage(img, 0, 0);
+        restore();
+    }
 }
 
-function __getCanvas(canvas) {
-    var element;
-
-    if (typeof canvas === 'string') {
-        element = document.querySelector(canvas);
-        if (!element) {
-            throw new Error('');
-        }
-    } else if (canvas && (canvas.tagName.toLowerCase() === 'canvas')) {
-        element = canvas;
-    } else {
-        throw new Error('');
-    }
-    return element;
+////
+function Point(x, y) {
+    this.x = x;
+    this.y = y;
 }
 
-    global.Oppai = global.Oppai || Oppai;
+Point.prototype = {
+    constructor: Point,
+    getCurrentXY: _getCurrentXY
+};
 
-
-    global[NS] = global[NS] || function(img_path, viewer_selector, set_1, set_2) {
-        var viewer = tt(viewer_selector),
-            img = new Image(),
-            op_1, op_2;
-
-        viewer.on(events.touchMove, function(ev) {
-            ev.preventDefault();
-        });
-        img.onload = function() {
-            viewer.css({
-                "position":   "relative",
-                "margin":     "0",
-                "width":      img.width + "px",
-                "height":     img.height + "px",
-                "background": "url(" + img_path + ") no-repeat left top",
-                "zoom":       isSmartphone ? "0.5" : "1"
-            });
-            op_1 = new Oppai(img, viewer.get(), set_1.vertex, set_1.rect);
-            op_2 = new Oppai(img, viewer.get(), set_2.vertex, set_2.rect);
-        };
-        img.src = img_path;
+function _getCurrentXY() {
+    return {
+        x: this.x,
+        y: this.y
     };
+}
 
-    function Oppai(img, canvas, vertex, rect) {
-        return (this instanceof Oppai) ?
-                    this.init(img, canvas, vertex, rect) :
-                    new Oppai(img, canvas, vertex, rect);
+function MatrixUtil(a, b, c, d) {
+    this.a = a;
+    this.b = b;
+    this.c = c;
+    this.d = d;
+}
+
+MatrixUtil.prototype.getInvert = function() {
+    var det = this.a * this.d - this.b * this.c;
+
+    if (det > -0.0001 && det < 0.0001) {
+        return null;
     }
+    return (new MatrixUtil(
+        this.d / det,
+        -this.b / det,
+        -this.c / det,
+        this.a / det
+    ));
+};
 
-    Oppai.prototype = {
-        constructor: Oppai,
-        init: function(img, viewer, vertex, rect) {
-            var threshold = 35;
-
-            this.canvas = document.createElement("canvas");
-            this.ctx = this.canvas.getContext("2d");
-            this.img = img;
-
-            // 切り出す幅を設定
-            this.width = rect[1][0] - rect[0][0];
-            this.height = rect[1][1] - rect[0][1];
-
-            // ルートの座標を保存
-            this.rootCoords = {
-                x: rect[0][0],
-                y: rect[0][1]
-            };
-
-            // 初期の頂点座標をcanvasの座標系にあわせる
-            this.vertex = {
-                x: vertex[0] - rect[0][0],
-                y: vertex[1] - rect[0][1]
-            };
-
-            // 左上,右上,右下,左下の順で座標を設定
-            this.coords = [
-                { x: 0,          y: 0},
-                { x: this.width, y: 0},
-                { x: this.width, y: this.height},
-                { x: 0,          y: this.height}
-            ];
-
-            // 頂点の動き制限範囲
-            this.threshold = {
-                min: { x: this.vertex.x - threshold, y: this.vertex.y - threshold },
-                max: { x: this.vertex.x + threshold, y: this.vertex.y + threshold }
-            };
-
-            this.animation = new Animation2D("bounseout");
-
-            // set canvas element
-            this.canvas.width = this.width;
-            this.canvas.height = this.height;
-            tt(this.canvas).css({
-                "position": "absolute",
-                "top": rect[0][1] + "px",
-                "left": rect[0][0] + "px"
-            });
-
-            // binding events
-            this.canvas.addEventListener(events.touchStart, this, false);
-            this.canvas.addEventListener(events.touchMove,  this, false);
-            this.canvas.addEventListener(events.touchEnd,   this, false);
-            if (tt.env.ios) {
-                global.addEventListener("devicemotion", this, false);
-            }
-
-            // initial running
-            viewer.appendChild(this.canvas);
-            this.draw();
-        },
-        draw: function() {
-            this.ctx.drawImage(
-                this.img,
-                this.rootCoords.x,
-                this.rootCoords.y,
-                this.width,
-                this.height,
-                0,
-                0,
-                this.width,
-                this.height
-            );
-        },
-        transform: function(vertex) {
-            var ctx = this.ctx,
-                current, next;
-
-            ctx.clearRect(0, 0, this.width, this.height);
-
-            for (var i = 0, iz = 3; i <= iz; ++i) {
-                current = this.coords[i];
-                next = this.coords[(i !== iz) ? (i + 1) : 0];
-                ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(current.x, current.y);
-                ctx.lineTo(next.x, next.y);
-                ctx.lineTo(vertex.x, vertex.y);
-                ctx.closePath();
-                ctx.clip();
-                this.triangles[i].call(this, vertex);
-                this.draw();
-                ctx.restore();
-            }
-        },
-        triangles: [
-            function(vertex) {
-                this.ctx.setTransform(
-                    1,
-                    0,
-                    (vertex.x - this.vertex.x) / this.height,
-                    (vertex.y - this.vertex.y) / this.height + 1,
-                    0,
-                    0
-                );
-            },
-            function(vertex) {
-                var x = this.vertex.x - vertex.x,
-                    y = this.vertex.y - vertex.y;
-
-                this.ctx.setTransform(
-                    x / this.width + 1,
-                    y / this.width,
-                    0,
-                    1,
-                    -x,
-                    -y
-                );
-            },
-            function(vertex) {
-                var x = this.vertex.x - vertex.x,
-                    y = this.vertex.y - vertex.y;
-
-                this.ctx.setTransform(
-                    1,
-                    0,
-                    x / this.height,
-                    y / this.height + 1,
-                    -x,
-                    -y
-                );
-            },
-            function(vertex) {
-                this.ctx.setTransform(
-                    (vertex.x - this.vertex.x) / this.width + 1,
-                    (vertex.y - this.vertex.y) / this.width,
-                    0,
-                    1,
-                    0,
-                    1
-                );
-            }
-        ],
-        handleEvent: function(ev) {
-            ev.preventDefault();
-            switch (ev.type) {
-            case "devicemotion":
-                this._startVertex || this._deviceMotion(ev);
-                break;
-            case events.touchStart:
-                this._touchStart(ev);
-                break;
-            case events.touchMove:
-                if (!this.animation.playing && this._startVertex) {
-                    this._touchMove(ev);
-                }
-                break;
-            case events.touchEnd:
-                this._startVertex && this._touchEnd(ev);
-                break;
-            }
-        },
-        _deviceMotion: function(ev) {
-            var self = this,
-                accX = (ev.acceleration.x * 5) | 0,
-                accY = (ev.acceleration.y * 5) | 0,
-                currentVertex;
-
-            currentVertex = this._getRangedVertex({
-                                x: accX + this.vertex.x,
-                                y: accY + this.vertex.y
-                            });
-            //self.transform(currentVertex);
-            global.setTimeout(function() {
-                !this._startVertex && self.transform(currentVertex);
-            });
-        },
-        _touchAnimation: function(fromVertex) {
-            var self = this;
-
-            this.animation.play(fromVertex, this.vertex, 600, function(value, isContinue) {
-                self.transform(value);
-                isContinue || (self._startVertex = null);
-            });
-        },
-        _touchStart: function(ev) {
-            this._startVertex = this._getTouchVertex(ev);
-        },
-        _touchMove: function(ev) {
-            var vertex = this._getTouchVertex(ev, true);
-
-            this.transform(vertex);
-        },
-        _touchEnd: function(ev) {
-            var vertex = this._getTouchVertex(ev, true);
-
-            this._touchAnimation(vertex);
-        },
-        _getRangedVertex: function(vertex) {
-            return {
-                x: getRangedNumber(vertex.x, this.threshold.min.x, this.threshold.max.x),
-                y: getRangedNumber(vertex.y, this.threshold.min.y, this.threshold.max.y)
-            };
-        },
-        _getTouchVertex: function(ev, round) {
-            var currentVertex = {
-                x: getTouchInfo(ev, "pageX") - (isSmartphone ? this.rootCoords.x * 0.5 : this.rootCoords.x),
-                y: getTouchInfo(ev, "pageY") - (isSmartphone ? this.rootCoords.y * 0.5 : this.rootCoords.y)
-            };
-
-            return round ? this._getRangedVertex(currentVertex) : currentVertex;
-        }
-    };
-
-    function Animation2D(type) {
-        return (this instanceof Animation2D) ?
-                    this.init(type) :
-                    new Animation2D(type);
-    }
-
-    Animation2D.prototype = {
-        constructor: Animation2D,
-        init: function(type) {
-            this.type = type;
-            this.easing = easingFunctions[type];
-            return this;
-        },
-        play: function(from, to, duration, callback, type) {
-            this.set(from, to, duration, callback, type);
-            this.exec();
-        },
-        stop: function() {
-            this._continue = false;
-        },
-        set: function(from, to, duration, callback, type) {
-            this.from = from;
-            this.to = to;
-            this.changein = {
-                x: to.x - from.x,
-                y: to.y - from.y
-            };
-            this.duration = duration;
-            this.callback = callback;
-            type && this.init(type);
-        },
-        exec: function() {
-            var self = this;
-
-            this.startAt = new Date;
-            this._continue = true;
-            _loop();
-
-            function _loop() {
-                self._animate() && global.requestAnimationFrame(_loop);
-            }
-        },
-        _animate: function() {
-            var elapsedTime = (new Date) - this.startAt,
-                value = {};
-
-            this.playing = this._continue && (elapsedTime <= this.duration);
-
-            value.x = this.playing ?
-                        this.easing(elapsedTime, this.from.x, this.changein.x, this.duration) :
-                        this.to.x;
-            value.y = this.playing ?
-                        this.easing(elapsedTime, this.from.y, this.changein.y, this.duration) :
-                        this.to.y;
-
-            this.callback(value, this.playing);
-            return this.playing;
-        }
-    };
-
-    function getRangedNumber(target, min, max) {
-        return (target <= min) ? min :
-               (target >= max) ? max :
-               target;
-    }
-
-    function getTouchInfo(event, name) {
-        return supportTouch ? event.changedTouches[0][name] : event[name];
-    }
+//// export
+global.Oppai.Breast = Breast;
 
 })(this.self || global, void 0);
