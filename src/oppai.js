@@ -146,7 +146,6 @@ function _loadImage(src, callback) {
     image.onload = function() {
         var img = that.image = document.createElement('canvas');
 
-        document.body.appendChild(img);
         img.width = image.naturalWidth;
         img.height = image.naturalHeight;
         if (that.setting.dpr > 1) {
