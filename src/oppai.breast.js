@@ -1,8 +1,10 @@
 ;(function(global, undefined) {
+'use strict';
 
 if (!global.Oppai) {
     throw new Error('Undefined objecct: "Oppai"');
 }
+var Math = global.Math;
 
 /**
  * @param {CanvasRenderingContext2D} ctx
@@ -13,50 +15,130 @@ if (!global.Oppai) {
  */
 function Breast(ctx, image, opp) {
     var roundCoords = opp.round_coords;
-    var roundPoints;
 
+    this.vertexPoint = null;
+    this.radiallyLines = [];
     this.ctx = ctx;
     this.image = image;
-    this.createTriangles();
-    this.draw();
-    // var that = this;
-    // setInterval(function() {
-    //     that.update();
-    //     that.draw();
-    // }, 500);
+    this.resolution = 2;
+    this.createPoints(opp);
 }
 
 Breast.prototype = {
     constructor: Breast,
-    update: _update,
     draw: _draw,
     drawTriangle: _drawTriangle,
-    createPoints: _createPoints
+    createPoints: _createPoints,
+    moveTo: _moveTo
 };
 
-function _update() {
-    this.vertexPoint.moveX += 1;
+function _moveTo(rateX, rateY) {
+    var vertexPoint = this.vertexPoint;
+    var vx = (rateX / 100) * (
+                (rateX < 0) ? (vertexPoint.x - this.minX) :
+                (rateX > 0) ? (this.maxX - vertexPoint.x) : 0);
+    var vy = (rateY / 100) * (
+                (rateY < 0) ? (vertexPoint.y - this.minY) :
+                (rateY > 0) ? (this.maxY - vertexPoint.y) : 0);
+    var radiallyLines = this.radiallyLines;
+    var radian = Math.atan2(vy, vx);
+    var angle = __getAngleByRadian(radian);
+    var dist = Math.sqrt(vx * vx + vy * vy);
+    var weightBase = 1 / this.resolution;
+    var ral, point;
+    var i = 0, j;
+
+    vertexPoint.setMoveVolume(vx, vy);
+    for (; ral = radiallyLines[i]; i++) {
+        // 一番外側から2番目が動く(一番外側は動かさない)
+        j = ral.length - 2;
+
+        while ((point = ral[j])) {
+            var direction = Math.abs(angle - point.angle);
+            var weight = weightBase * (j + 1);
+
+            switch (true) {
+                // 同方向
+                case (direction < 60):
+                    if (point.distance > dist) {
+                        weight *= 0.7;
+                    } else {
+                        weight *= 0.85;
+                    }
+                    break;
+                // 逆方向
+                case (direction > 300):
+                    weight *= 1.2;
+                    break;
+            }
+            point.setMoveVolume(vx * weight, vy * weight);
+            j--;
+        }
+    }
 }
 
-function _createPoints() {
-    this.vertexPoint = new Point(opp.vertex[0], opp.vertex[1]);
-    this.roundPoints = roundPoints = [];
+function _createPoints(opp) {
+    var vertex = opp.vertex;
+    var resolution = this.resolution;
+    var roundCoords = opp.round_coords;
+    var radiallyLines = this.radiallyLines;
+    var linePointList;
+    var minX, minY, maxX, maxY;
+
+    // 描画領域設定用
+    minX = minY = 99999999;
+    maxX = maxY = 0;
+
+    this.vertexPoint = new Point(vertex[0], vertex[1]);
     for (var i = 0, coord; coord = roundCoords[i]; i++) {
-        roundPoints.push(new Point(coord[0], coord[1]));
+        radiallyLines[radiallyLines.length] = _getLinePointList(vertex, coord, resolution);
+        minX = Math.min(minX, coord[0]);
+        minY = Math.min(minY, coord[1]);
+        maxX = Math.max(maxX, coord[0]);
+        maxY = Math.max(maxY, coord[1]);
     }
 
+    this.minX = minX;
+    this.minY = minY;
+    this.maxX = maxX;
+    this.maxY = maxY;
+    this.moveRangeX = (maxX - minX) / 2;
+    this.moveRangeY = (maxY - minY) / 2;
+
+    function _getLinePointList(vertex, outer, resolution) {
+        var res = [];
+
+        if (resolution > 1) {
+            var vx = vertex[0];
+            var vy = vertex[1];
+            var dx = (outer[0] - vx) / resolution;
+            var dy = (outer[1] - vy) / resolution;
+
+            for (var i = 1; i < resolution; i++) {
+                res[res.length] = new Point(vx + (dx * i), vy + (dy * i), vertex[0], vertex[1]);
+            }
+        }
+        res[res.length] = new Point(outer[0], outer[1], vertex[0], vertex[1]);
+        return res;
+    }
 }
 
 function _draw() {
-    var that = this;
-    var vertexPoint =  that.vertexPoint;
-    var roundPoints = that.roundPoints;
-    var rp, nextRp;
-    var i = 0, j;
+    var vertexPoint = this.vertexPoint;
+    var radiallyLines = this.radiallyLines;
+    var ral, nextRal;
+    var i = 0, j, k;
 
-    for (; rp = roundPoints[i]; i++) {
-        nextRp = roundPoints[i + 1] || roundPoints[0];
-        that.drawTriangle(rp, nextRp, vertexPoint);
+    for (; ral = radiallyLines[i]; i++) {
+        nextRal = radiallyLines[i + 1] || radiallyLines[0];
+        j = 0;
+
+        this.drawTriangle(ral[j], nextRal[j], vertexPoint);
+        while (!!ral[(k = j + 1)]) {
+            this.drawTriangle(ral[j], nextRal[j], ral[k]);
+            this.drawTriangle(nextRal[j], ral[k], nextRal[k]);
+            j++;
+        }
     }
 }
 
@@ -103,35 +185,44 @@ function _drawTriangle(p0, p1, p2) {
     d = mInvert.c * ay + mInvert.d * by;
 
     // 描画
-    with (ctx) {
-        save();
-        beginPath();
-        moveTo(p0x, p0y);
-        lineTo(p1x, p1y);
-        lineTo(p2x, p2y);
-        closePath();
-        clip();
-        transform(a, b, c, d,
-            p0x - (a * p0.x + c * p0.y),
-            p0y - (b * p0.x + d * p0.y));
-        drawImage(img, 0, 0);
-        restore();
-        strokeStyle = 'blue';
-        stroke();
-    }
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p0x, p0y);
+    ctx.lineTo(p1x, p1y);
+    ctx.lineTo(p2x, p2y);
+    ctx.closePath();
+    ctx.clip();
+    ctx.transform(a, b, c, d,
+        p0x - (a * p0.x + c * p0.y),
+        p0y - (b * p0.x + d * p0.y));
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
 }
 
-////
-function Point(x, y) {
+function Point(x, y, vx, vy) {
     this.x = x;
     this.y = y;
     this.moveX = 0;
     this.moveY = 0;
+    if (vx !== undefined && vy !== undefined) {
+        this.distX = this.x - vx;
+        this.distY = this.y - vy;
+        this.distance = Math.sqrt(this.distX * this.distX + this.distY * this.distY);
+        this.radian = Math.atan2(this.distY, this.distX);
+        this.angle = __getAngleByRadian(this.radian);
+    } else {
+        this.distX = 0;
+        this.distY = 0;
+        this.distance = 0;
+        this.radian = null;
+        this.angle = null;
+    }
 }
 
 Point.prototype = {
     constructor: Point,
-    getCurrentXY: _getCurrentXY
+    getCurrentXY: _getCurrentXY,
+    setMoveVolume: _setMoveVolume
 };
 
 function _getCurrentXY() {
@@ -139,6 +230,11 @@ function _getCurrentXY() {
         x: this.x + this.moveX,
         y: this.y + this.moveY
     };
+}
+
+function _setMoveVolume(x, y) {
+    this.moveX = x;
+    this.moveY = -y;
 }
 
 function MatrixUtil(a, b, c, d) {
@@ -161,6 +257,10 @@ MatrixUtil.prototype.getInvert = function() {
         this.a / det
     ));
 };
+
+function __getAngleByRadian(rad) {
+    return rad * 180 / Math.PI;
+}
 
 //// export
 global.Oppai.Breast = Breast;

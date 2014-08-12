@@ -1,5 +1,8 @@
 ;(function(global, undefined) {
-var DEBUG = false;
+'use strict';
+
+var Math = global.Math;
+var Date = global.Date;
 var document = global.document;
 var env = __getEnv(global.navigator.userAgent);
 var events = {
@@ -38,18 +41,19 @@ function Oppai() {
     this.canvas = __getCanvas(canvas);
     this.ctx = this.canvas.getContext('2d');
     this.image = null;
-    this.hooters = [];
+    this.breasts = [];
     this._oppList = args;
     this._loadImage(imgPath, function() {
         that._init();
     });
+    global.opp = this;
 }
-
 
 //// static methods & properties
 Oppai.getTouchInfoFromEvent = _getTouchInfo;
 Oppai.extend = _extend;
 Oppai.env = env;
+Oppai.requestAnimationFrame = raf;
 
 function _getTouchInfo(event, name) {
     return env.isTouchDevice ? event.changedTouches[0][name] : event[name];
@@ -107,36 +111,72 @@ function _extend() {
 //// instance methods
 Oppai.prototype = {
     constructor: Oppai,
-    update: _update,
-    _init: _init,
-    _loadImage: _loadImage
+    _createAction     : _createAction,
+    _init             : _init,
+    _initTouchHandler : _initTouchHandler,
+    _loadImage        : _loadImage,
+    bounce            : _bounce,
+    moveAll           : _moveAll,
+    roll              : _roll,
+    swing             : _swing,
+    update            : _update,
 };
 
-function _update() {
-    var that = this;
-    var hooters = this.hooters;
-
-    for (var i = 0, breast; breast = hooters[i]; ++i) {
-        breast.update();
-    }
-    raf(function() {
-        that.update();
-    });
-}
 
 function _init() {
     var oppList = this._oppList;
     var canvas = this.canvas;
     var ctx = this.ctx;
     var image = this.image;
+    var breasts = this.breasts;
+    var minX, minY, maxX, maxY;
+
+    // NOTE. 描画領域設定用のダミー値
+    minX = minY = 99999999;
+    maxX = maxY = 0;
 
     canvas.width = image.width;
     canvas.height = image.height;
+    // 最初の一回描画
+    ctx.drawImage(image, 0, 0);
 
-    for (var i = 0, opp; opp = oppList[i]; i++) {
-        this.hooters.push(new Oppai.Breast(ctx, image, opp));
+    for (var i = 0, opp, b; opp = oppList[i]; i++) {
+        b = breasts[i] = new Oppai.Breast(ctx, image, opp);
+        minX = Math.min(minX, b.minX);
+        minY = Math.min(minY, b.minY);
+        maxX = Math.max(maxX, b.maxX);
+        maxY = Math.max(maxY, b.maxY);
+    }
+    // NOTE. 設定する余白(一旦決め打ちで 20px )
+    var allowance = 20;
+
+    this.bgDrawRect = {
+        x: Math.max(0, minX - allowance),
+        y: Math.max(0, minY - allowance),
+        w: Math.min(canvas.width , maxX + allowance),
+        h: Math.min(canvas.height, maxY + allowance)
+    };
+    // 基準値からの幅と高さなので、それぞれ x, y を引く
+    this.bgDrawRect.w -= this.bgDrawRect.x;
+    this.bgDrawRect.h -= this.bgDrawRect.y;
+
+    if (env.isTouchDevice && 'ondevicemotion' in global) {
+        this._initTouchHandler();
     }
     this.update();
+}
+
+function _initTouchHandler() {
+    var that = this;
+
+    this.motionHandler = new Oppai.MotionHandler(function(vector) {
+        var distance = vector.distance;
+
+        that.swing(
+            Math.min(90, (vector.x / distance) * 100),
+            Math.min(90, (vector.y / distance) * 100));
+    });
+    this.motionHandler.on();
 }
 
 function _loadImage(src, callback) {
@@ -161,6 +201,75 @@ function _loadImage(src, callback) {
         throw new Error('cannot load image [src]: ' + src);
     };
     image.src = src;
+}
+
+function _update() {
+    var breasts = this.breasts;
+    var bgDrawRect = this.bgDrawRect;
+
+    // 胸の範囲を再描画
+    this.ctx.drawImage(this.image,
+                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h,
+                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h);
+    for (var i = 0, b; b = breasts[i]; i++) {
+        b.draw();
+    }
+}
+
+function _moveAll(dx, dy) {
+    var breasts = this.breasts;
+
+    for (var i = 0, b; b = breasts[i]; i++) {
+        b.moveTo(dx, dy);
+    }
+    this.update();
+}
+
+function _swing(x, y) {
+    var that = this;
+    var handler = function(dx, dy) {
+            that.moveAll(x - dx, y - dy);
+    };
+    var action = this._createAction(2000, handler);
+
+    action.start(
+        { start: 0, end: x },
+        { start: 0, end: y }
+    );
+}
+
+function _bounce(value) {
+    var that = this;
+    var handler = function(val) {
+            that.moveAll(0, value - val);
+    };
+    var action = this._createAction(2000, handler);
+
+    action.start({ start: 0, end: value });
+}
+
+function _roll(value) {
+    var that = this;
+    var handler = function(val) {
+            that.moveAll(value - val, 0);
+    };
+    var action = this._createAction(2000, handler);
+
+    action.start({ start: 0, end: value });
+}
+
+function _createAction(duration, handler, endHandler) {
+    var that = this;
+
+    if (this.action) {
+        this.action.end();
+    }
+    var _endHandler = function() {
+        that.action = null;
+        endHandler && endHandler();
+    };
+
+    return this.action = new Oppai.Action(duration, handler, _endHandler);
 }
 
 
@@ -214,6 +323,7 @@ function __getEnv(ua) {
         if (res.isIE) {
             if ((res.versionString = ua.match(/rv:([\d\.]+)/)) ||
                 (res.versionString = ua.match(/MSIE ([0-9]{1,}[\.0-9]{0,})/))) {
+                    res.versionString = res.versionString[1];
                     res.version = res.versionString.split('.');
             }
         }

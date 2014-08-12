@@ -8,7 +8,7 @@ var pkg = require('./package.json');
 var BANNER = '/*! <%= name %> / @version:<%= version %> @author:<%= author %> @license:<%= license %> */ \n';
 
 gulp.task('dist', function() {
-    gulp.src(['src/oppai.js', 'src/oppai.breast.js'])
+    gulp.src(['src/oppai.js', 'src/*.js'])
         .pipe(concat('oppai.min.js'))
         // .pipe(uglify('oppai.min.js', {
         //     outSourceMap: true
@@ -18,7 +18,7 @@ gulp.task('dist', function() {
         .pipe(gulp.dest('sample/js/'))
 });
 
-gulp.task('develop', function() {
+gulp.task('develop', ['dist'], function() {
     gulp.watch('src/**/*.js', ['dist']);
     connect.server({
         root: ['sample'],
