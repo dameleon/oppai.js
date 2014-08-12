@@ -18,8 +18,6 @@ var raf = global.requestAnimationFrame ||
           (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
 var defaultSetting = {
         dpr: 1,
-        onload: null,
-        onstart: null
 };
 
 /**
@@ -31,22 +29,19 @@ var defaultSetting = {
  * @param {Array}  opp[].round_coods [[x, y], [x, y], ...]
  */
 function Oppai() {
-    var that = this;
     var args = [].slice.call(arguments);
     var canvas = args.shift();
     var imgPath = args.shift();
     var option = args.shift();
 
-    this.setting = _extend({}, defaultSetting, option);
+    this.setting = _extend({
+        imgPath: imgPath
+    }, defaultSetting, option);
     this.canvas = __getCanvas(canvas);
     this.ctx = this.canvas.getContext('2d');
     this.image = null;
     this.breasts = [];
     this._oppList = args;
-    this._loadImage(imgPath, function() {
-        that._init();
-    });
-    global.opp = this;
 }
 
 //// static methods & properties
@@ -116,12 +111,21 @@ Oppai.prototype = {
     _initTouchHandler : _initTouchHandler,
     _loadImage        : _loadImage,
     bounce            : _bounce,
+    load              : _load,
     moveAll           : _moveAll,
     roll              : _roll,
     swing             : _swing,
     update            : _update,
 };
 
+function _load(callback) {
+    var that = this;
+
+    this._loadImage(this.setting.imgPath, function() {
+        that._init();
+        callback && callback();
+    });
+}
 
 function _init() {
     var oppList = this._oppList;
