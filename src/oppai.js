@@ -342,5 +342,11 @@ function __getEnv(ua) {
 
 //// export
 global.Oppai = Oppai;
+// for AMD
+if (!('process' in global) && (typeof global.define === 'function' && global.define.amd)) {
+    define([], function() {
+        return Oppai;
+    });
+}
 
 })(this.self || global, void 0);
