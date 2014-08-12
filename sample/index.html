@@ -8,11 +8,8 @@
 html, body {
     background: #000;
 }
-#viewer {
-}
 </style>
-<script src="js/tt.min.js"></script>
-<script src="js/oppai.js"></script>
+<script src="js/oppai.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     /*
@@ -38,19 +35,27 @@ document.addEventListener("DOMContentLoaded", function() {
     */
 
     // pai_03.jpg
+    // var left = {
+    //         vertex: [313, 481],
+    //         round_coords: [[347, 428], [381, 440], [370, 477], [371, 514], [342, 531], [304, 511], [296, 478], [315, 441]]
+    //     },
+    //     right = {
+    //         vertex: [418, 488],
+    //         round_coords:   [[425, 438], [467, 462], [463, 500], [444, 543], [403, 542], [371, 513], [371, 477], [389, 449]]
+    //     };
     var left = {
-            vertex: [247, 423],
-            rect:   [[207, 399], [299, 475]]
+            vertex: [236, 427],
+            round_coords: [[263, 398], [297, 410], [296, 436], [265, 473], [226, 466], [210, 451], [211, 424], [230, 406]]
         },
         right = {
-            vertex: [397, 431],
-            rect:   [[343, 399], [432, 483]]
+            vertex: [398, 431],
+            round_coords:   [[361, 389], [403, 404], [431, 432], [422, 466], [389, 481], [352, 471], [335, 438], [340, 406]]
         };
-    oppai("img/pai_03.jpg", "#viewer", left, right);
+    new Oppai("#viewer", "img/pai_03.jpg", null, left, right);
 }, false);
 </script>
 </head>
 <body>
-<div id="viewer"></div>
+<canvas id="viewer"></canvas>
 </body>
 </html>

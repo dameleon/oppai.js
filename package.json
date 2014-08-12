@@ -1,0 +1,31 @@
+{
+  "name": "oppai.js",
+  "version": "0.1.0",
+  "description": "oppai.js",
+  "main": "dist/oppai.min.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dameleon/oppai.js.git"
+  },
+  "keywords": [
+    "canvas",
+    "animation"
+  ],
+  "author": "dameleon <dameleon@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dameleon/oppai.js/issues"
+  },
+  "homepage": "https://github.com/dameleon/oppai.js",
+  "devDependencies": {
+    "bower": "^1.3.8",
+    "gulp": "^3.8.7",
+    "gulp-connect": "^2.0.6",
+    "gulp-header": "^1.0.5",
+    "gulp-uglifyjs": "^0.4.2",
+    "gulp-concat": "^2.3.4"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "oppai.js",
+  "version": "0.1.0",
+  "homepage": "https://github.com/dameleon/oppai.js",
+  "authors": [
+    "dameleon <dameleon@gmail.com>"
+  ],
+  "main": "/dist/oppai.min.js",
+  "keywords": [
+    "oppai",
+    "canvas",
+    "animation"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "sample",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
