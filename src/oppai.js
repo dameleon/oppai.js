@@ -49,6 +49,7 @@ Oppai.getTouchInfoFromEvent = _getTouchInfo;
 Oppai.extend = _extend;
 Oppai.env = env;
 Oppai.requestAnimationFrame = raf;
+Oppai._debug = false;
 
 function _getTouchInfo(event, name) {
     return env.isTouchDevice ? event.changedTouches[0][name] : event[name];
@@ -229,12 +230,12 @@ function _moveAll(dx, dy) {
     this.update();
 }
 
-function _swing(x, y) {
+function _swing(x, y, duration) {
     var that = this;
     var handler = function(dx, dy) {
             that.moveAll(x - dx, y - dy);
     };
-    var action = this._createAction(2000, handler);
+    var action = this._createAction(duration || 3000, handler);
 
     action.start(
         { start: 0, end: x },
@@ -242,22 +243,22 @@ function _swing(x, y) {
     );
 }
 
-function _bounce(value) {
+function _bounce(value, duration) {
     var that = this;
     var handler = function(val) {
             that.moveAll(0, value - val);
     };
-    var action = this._createAction(2000, handler);
+    var action = this._createAction(duration || 3000, handler);
 
     action.start({ start: 0, end: value });
 }
 
-function _roll(value) {
+function _roll(value, duration) {
     var that = this;
     var handler = function(val) {
             that.moveAll(value - val, 0);
     };
-    var action = this._createAction(2000, handler);
+    var action = this._createAction(duration || 3000, handler);
 
     action.start({ start: 0, end: value });
 }
@@ -307,15 +308,15 @@ function __getEnv(ua) {
     // for smartphone
     if (res.isAndroid || res.isIos) {
         res.isChrome = /(chrome|crios)/.test(ua);
-        res.isAndroidBrowser = !res.chrome && res.android && /applewebkit/.test(ua);
-        res.isMobileSafari = !res.chrome && res.ios && /applewebkit/.test(ua);
+        res.isAndroidBrowser = !res.isChrome && res.isAndroid && /applewebkit/.test(ua);
+        res.isMobileSafari = !res.isAndroid && res.isIos && /applewebkit/.test(ua);
         res.versionString =
-            (res.androidBrowser || res.android && res.chrome) ? ua.match(/android\s(\S.*?)\;/) :
-            (res.mobileSafari || res.ios && res.chrome) ? ua.match(/os\s(\S.*?)\s/) :
+            (res.isAndroidBrowser || res.isAndroid && res.isChrome) ? ua.match(/android\s(\S.*?)\;/) :
+            (res.isMobileSafari || res.isIos && res.isChrome) ? ua.match(/os\s(\S.*?)\s/) :
             null;
         res.versionString = res.versionString ?
             // iOS だったら、_ を . に直す
-            (res.ios ? res.versionString[1].replace('_', '.') : res.versionString[1]) :
+            (res.isIos ? res.versionString[1].replace('_', '.') : res.versionString[1]) :
             null;
         if (res.versionString) {
             res.version = res.versionString.split('.');

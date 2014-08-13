@@ -16,6 +16,7 @@ var Math = global.Math;
 function Breast(ctx, image, opp) {
     var roundCoords = opp.round_coords;
 
+    this.isDebug = global.Oppai._debug;
     this.vertexPoint = null;
     this.radiallyLines = [];
     this.ctx = ctx;
@@ -196,6 +197,10 @@ function _drawTriangle(p0, p1, p2) {
         p0x - (a * p0.x + c * p0.y),
         p0y - (b * p0.x + d * p0.y));
     ctx.drawImage(img, 0, 0);
+    if (this.isDebug) {
+        ctx.strokeStyle = 'blue';
+        ctx.stroke();
+    }
     ctx.restore();
 }
 
