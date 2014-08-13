@@ -142,6 +142,12 @@ function _init() {
 
     canvas.width = image.width;
     canvas.height = image.height;
+    if (this.setting.dpr > 1) {
+        var dpr = that.setting.dpr;
+
+        canvas.style.width = (image.width / dpr) + 'px';
+        canvas.style.height = (image.height / dpr) + 'px';
+    }
     // 最初の一回描画
     ctx.drawImage(image, 0, 0);
 
@@ -193,12 +199,6 @@ function _loadImage(src, callback) {
 
         img.width = image.naturalWidth;
         img.height = image.naturalHeight;
-        if (that.setting.dpr > 1) {
-            var dpr = that.setting.dpr;
-
-            img.style.width = (img.width / dpr) + 'px';
-            img.style.height = (img.height / dpr) + 'px';
-        }
         img.getContext('2d').drawImage(image, 0, 0);
         callback();
     };
