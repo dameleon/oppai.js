@@ -12,6 +12,8 @@ html, body {
 <script src="js/oppai.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+
+    Oppai._debug = true;
     var left = {
             vertex: [236, 427],
             round_coords: [[263, 398], [297, 410], [296, 436], [265, 473], [226, 466], [210, 451], [211, 424], [230, 406]]
@@ -20,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function() {
             vertex: [398, 431],
             round_coords:   [[361, 389], [403, 404], [431, 432], [422, 466], [389, 481], [352, 471], [335, 438], [340, 406]]
         };
-    var oppai = new Oppai("#viewer", "img/pai_03.jpg", null, left, right);
+    var oppai = new Oppai("#viewer", "img/pai_03.jpg", { enableTouch: true }, left, right);
 
     oppai.load(function() {
         window.pai = oppai;

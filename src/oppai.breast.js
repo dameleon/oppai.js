@@ -202,7 +202,7 @@ function _drawTriangle(p0, p1, p2) {
     ctx.transform(a, b, c, d,
         p0x - (a * p0.x + c * p0.y),
         p0y - (b * p0.x + d * p0.y));
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
     if (this.isDebug) {
         ctx.strokeStyle = 'blue';
         ctx.stroke();

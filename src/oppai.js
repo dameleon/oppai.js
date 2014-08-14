@@ -18,6 +18,7 @@ var raf = global.requestAnimationFrame ||
           (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
 var defaultSetting = {
         dpr: 1,
+        enableTouch: false
 };
 
 /**
@@ -113,6 +114,7 @@ Oppai.prototype = {
     _loadImage        : _loadImage,
     bounce            : _bounce,
     load              : _load,
+    handleEvent       : _handleEvent,
     moveAll           : _moveAll,
     roll              : _roll,
     swing             : _swing,
@@ -170,11 +172,34 @@ function _init() {
     // 基準値からの幅と高さなので、それぞれ x, y を引く
     this.bgDrawRect.w -= this.bgDrawRect.x;
     this.bgDrawRect.h -= this.bgDrawRect.y;
+    this.bgDrawRect.center = {
+        x: this.bgDrawRect.x + (this.bgDrawRect.w / 2),
+        y: this.bgDrawRect.y + (this.bgDrawRect.h / 2),
+    };
 
     if (env.isTouchDevice && 'ondevicemotion' in global) {
         this._initTouchHandler();
     }
+    if (this.setting.enableTouch) {
+        canvas.addEventListener(env.isTouchDevice ? 'touchstart' : 'click', this);
+    }
     this.update();
+}
+
+function _handleEvent(ev) {
+    var canvas = this.canvas;
+    var bgDrawRect = this.bgDrawRect;
+    var x = __getTouchInfo(ev, 'pageX') - canvas.clientLeft;
+    var y = __getTouchInfo(ev, 'pageY') - canvas.clientTop;
+    if (!(bgDrawRect.x < x && x < (bgDrawRect.x + bgDrawRect.w)) ||
+        !(bgDrawRect.y < y && y < (bgDrawRect.y + bgDrawRect.h))) {
+            return;
+    }
+    this.swing(
+        200 * Math.random() - 100,
+        200 * Math.random() - 100,
+        3000
+    );
 }
 
 function _initTouchHandler() {
@@ -212,6 +237,10 @@ function _update() {
     var breasts = this.breasts;
     var bgDrawRect = this.bgDrawRect;
 
+    if (!bgDrawRect) {
+        console.warn('bgDrawRect is not set yet');
+        return;
+    }
     // 胸の範囲を再描画
     this.ctx.drawImage(this.image,
                        bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h,
@@ -339,6 +368,10 @@ function __getEnv(ua) {
         }
     }
     return res;
+}
+
+function __getTouchInfo(ev, name) {
+    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
 }
 
 //// export
