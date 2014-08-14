@@ -186,15 +186,7 @@ function _init() {
     this.update();
 }
 
-function _handleEvent(ev) {
-    var canvas = this.canvas;
-    var bgDrawRect = this.bgDrawRect;
-    var x = ev.offsetX;
-    var y = ev.offsetY;
-    if (!(bgDrawRect.x < x && x < (bgDrawRect.x + bgDrawRect.w)) ||
-        !(bgDrawRect.y < y && y < (bgDrawRect.y + bgDrawRect.h))) {
-            return;
-    }
+function _handleEvent() {
     this.bounce(90, 3000);
 }
 
