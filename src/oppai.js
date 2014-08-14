@@ -219,7 +219,7 @@ function _loadImage(src, callback) {
         throw new Error('cannot load image [src]: ' + src);
     };
     image.src = src;
-    if (env.isIE && image.width !== 0) {
+    if (env.isIE) {
         if (image.width !== 0) {
             loadCallback();
         } else {
