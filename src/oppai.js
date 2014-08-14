@@ -195,7 +195,7 @@ function _handleEvent(ev) {
         !(bgDrawRect.y < y && y < (bgDrawRect.y + bgDrawRect.h))) {
             return;
     }
-    this.bounce(2000);
+    this.bounce(80, 2000);
 }
 
 function _initTouchHandler() {
