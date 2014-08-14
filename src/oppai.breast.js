@@ -61,7 +61,6 @@ function _moveTo(rateX, rateY) {
             switch (true) {
                 // 同方向
                 case (direction < 60):
-                    debugger;
                     if (point.distance > dist) {
                         if (minDist > point.distance) {
                             minDist = point.distance;
