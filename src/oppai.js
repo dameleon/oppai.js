@@ -206,8 +206,7 @@ function _initTouchHandler() {
 function _loadImage(src, callback) {
     var that = this;
     var image = new Image();
-
-    image.onload = function() {
+    var loadCallback = function() {
         var img = that.image = document.createElement('canvas');
 
         img.width = image.naturalWidth;
@@ -215,10 +214,22 @@ function _loadImage(src, callback) {
         img.getContext('2d').drawImage(image, 0, 0);
         callback();
     };
+
     image.onerror = function() {
         throw new Error('cannot load image [src]: ' + src);
     };
     image.src = src;
+    if (env.isIE && image.width !== 0) {
+        if (image.width !== 0) {
+            loadCallback();
+        } else {
+            image.onload = function() {
+                setTimeout(loadCallback, 200);
+            };
+        }
+    } else {
+        image.onload = loadCallback;
+    }
 }
 
 function _update() {
