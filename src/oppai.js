@@ -138,11 +138,13 @@ function _init() {
     var breasts = this.breasts;
     var bb, minX, minY, maxX, maxY;
 
+    // NOTE. 最小座標生成用
     minX = minY = 99999;
     maxX = maxY = 0;
 
     canvas.width = image.width;
     canvas.height = image.height;
+    // devicepixelratioが指定されている場合は、canvasのサイズを調整する
     if (this.setting.dpr > 1) {
         var dpr = this.setting.dpr;
 
@@ -241,6 +243,7 @@ function _update() {
         return;
     }
     // 胸の範囲を再描画
+    // FIXME. そもそも doublebuffer の方でやりたい人生だった
     this.ctx.drawImage(this.image,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);
@@ -368,10 +371,6 @@ function __getEnv(ua) {
     }
     return res;
 }
-
-//function __getTouchInfo(ev, name) {
-//    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
-//}
 
 //// export
 global.Oppai = Oppai;

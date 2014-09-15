@@ -139,11 +139,13 @@ function _init() {
     var breasts = this.breasts;
     var bb, minX, minY, maxX, maxY;
 
+    // NOTE. 最小座標生成用
     minX = minY = 99999;
     maxX = maxY = 0;
 
     canvas.width = image.width;
     canvas.height = image.height;
+    // devicepixelratioが指定されている場合は、canvasのサイズを調整する
     if (this.setting.dpr > 1) {
         var dpr = this.setting.dpr;
 
@@ -242,6 +244,7 @@ function _update() {
         return;
     }
     // 胸の範囲を再描画
+    // FIXME. そもそも doublebuffer の方でやりたい人生だった
     this.ctx.drawImage(this.image,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);
@@ -370,10 +373,6 @@ function __getEnv(ua) {
     return res;
 }
 
-//function __getTouchInfo(ev, name) {
-//    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
-//}
-
 //// export
 global.Oppai = Oppai;
 // for AMD
@@ -389,7 +388,7 @@ if (!('process' in global) && (typeof global.define === 'function' && global.def
 'use strict';
 
 if (!global.Oppai) {
-    throw new Error('Undefined objecct: "Oppai"');
+    throw new Error('Undefined object: "Oppai"');
 }
 var Math = global.Math;
 var Date = global.Date;
@@ -486,7 +485,7 @@ global.Oppai.Action = Action;
 'use strict';
 
 if (!global.Oppai) {
-    throw new Error('Undefined objecct: "Oppai"');
+    throw new Error('Undefined object: "Oppai"');
 }
 var Math = global.Math;
 
@@ -555,6 +554,7 @@ function _moveTo(rateX, rateY) {
         limitY = this.height - vertexPoint.y;
     }
     limitDist = Math.sqrt(limitX * limitX + limitY * limitY);
+    // 制限を超えているので、頂点座標などを修正する
     if (dist > limitDist) {
         dist = limitDist;
         vx = limitDist * Math.cos(radian) + vertexPoint.x;
@@ -574,14 +574,18 @@ function _moveTo(rateX, rateY) {
 
             // 同方向
             if (direction < 60) {
+                // NOTE. 移動距離がこのpointの距離より短い場合、このpointの移動距離をより短くする
                 if (point.distance > dist) {
                     weight *= 0.5;
-                } else {
+                }
+                // NOTE. 同方向のpointの基本移動距離は短めにする
+                else {
                     weight *= 0.85;
                 }
             }
             // 逆方向
             else if (direction > 300) {
+                // NOTE. 逆方向の場合、移動距離は長めにする
                 weight *= 1.2;
             }
             point.setMoveValue(vx * weight, vy * weight);
@@ -610,7 +614,7 @@ function _initialize(opp, img) {
     var width, height;
     var i, coord;
 
-    // 描画領域設定用
+    // NOTE. 描画領域設定用
     minX = minY = 99999;
     maxX = maxY = 0;
 
@@ -625,7 +629,7 @@ function _initialize(opp, img) {
     var vy = vertex[1] - minY;
 
     this.vertexPoint = new Point(vx, vy);
-    // NOTE. 2回回すのはダサいが…
+    // FIXME. 2回回すのはダサいが…
     for (i = 0, coord = null; coord = roundCoords[i]; i++) {
         radiallyLines[radiallyLines.length] = _getLinePointList(
             vx, vy,
@@ -696,6 +700,7 @@ function _drawTriangle(p0, p1, p2) {
     var by = p2y - p0y;
 
     // uv座標
+    // FIXME. UV座標用のMatrixはキャッシュできそう
     var uvAx = (p1.x - p0.x);
     var uvAy = (p1.y - p0.y);
     var uvBx = (p2.x - p0.x);
@@ -747,6 +752,7 @@ function Point(x, y, vx, vy) {
     this.y = y;
     this.moveX = 0;
     this.moveY = 0;
+    // 頂点が入力された場合は、頂点からの距離, ratian, 角度を生成
     if (vx !== undefined && vy !== undefined) {
         this.distX = vx - this.x;
         this.distY = vy - this.y;
@@ -814,7 +820,7 @@ global.Oppai.Breast = Breast;
 'use strict';
 
 if (!global.Oppai) {
-    throw new Error('Undefined objecct: "Oppai"');
+    throw new Error('Undefined object: "Oppai"');
 }
 var document = global.document;
 
