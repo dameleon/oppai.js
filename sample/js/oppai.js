@@ -3,20 +3,20 @@
 'use strict';
 
 var Math = global.Math;
-var Date = global.Date;
 var document = global.document;
 var env = __getEnv(global.navigator.userAgent);
 var events = {
-        touchStart: env.isTouchDevice && "touchstart" || "mousedown",
-        touchMove:  env.isTouchDevice && "touchmove"  || "mousemove",
-        touchEnd:   env.isTouchDevice && "touchend"   || "mouseup"
+        touchStart : env.isTouchDevice && "touchstart" || "mousedown",
+        touchMove  : env.isTouchDevice && "touchmove"  || "mousemove",
+        touchEnd   : env.isTouchDevice && "touchend"   || "mouseup",
+        tap        : env.isTouchDevice && "touchstart" || "click",
 };
 var raf = global.requestAnimationFrame ||
           global.webkitRequestAnimationFrame ||
           global.mozRequestAnimationFrame ||
           global.oRequestAnimationFrame ||
           global.msRequestAnimationFrame ||
-          (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
+          (function(timing) { return function(cb) { global.setTimeout(cb, timing); }; })(1000/60);
 var defaultSetting = {
         dpr: 1,
         enableTouch: false
@@ -182,7 +182,7 @@ function _init() {
         this._initTouchHandler();
     }
     if (this.setting.enableTouch) {
-        canvas.addEventListener(env.isTouchDevice ? 'touchstart' : 'click', this);
+        canvas.addEventListener(events.tap, this);
     }
     this.update();
 }
@@ -370,9 +370,9 @@ function __getEnv(ua) {
     return res;
 }
 
-function __getTouchInfo(ev, name) {
-    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
-}
+//function __getTouchInfo(ev, name) {
+//    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
+//}
 
 //// export
 global.Oppai = Oppai;
@@ -457,8 +457,12 @@ Action.prototype = {
 };
 
 function __elasticEaseOut(t, b, c, d, a, p){
-    if (t==0)      return b;
-    if ((t/=d)==1) return b + c;
+    if (t===0) {
+        return b;
+    }
+    if ((t/=d)===1) {
+        return b + c;
+    }
     if (!p) {
         p = d * 0.3;
     }
@@ -581,7 +585,6 @@ function _initialize(opp, img) {
     var resolution = this.resolution;
     var roundCoords = opp.round_coords;
     var radiallyLines = this.radiallyLines;
-    var linePointList;
     var minX, minY, maxX, maxY;
     var width, height;
     var i, coord;
@@ -640,25 +643,6 @@ function _draw() {
     );
 }
 
-// function _draw() {
-//     var vertexPoint = this.vertexPoint;
-//     var radiallyLines = this.radiallyLines;
-//     var ral, nextRal;
-//     var i = 0, j, k;
-//
-//     for (; ral = radiallyLines[i]; i++) {
-//         nextRal = radiallyLines[i + 1] || radiallyLines[0];
-//         j = 0;
-//
-//         this.drawTriangle(ral[j], nextRal[j], vertexPoint);
-//         while (!!ral[(k = j + 1)]) {
-//             this.drawTriangle(ral[j], nextRal[j], ral[k]);
-//             this.drawTriangle(nextRal[j], ral[k], nextRal[k]);
-//             j++;
-//         }
-//     }
-// }
-
 function _drawBetweenLines(line1, line2) {
     var i = 0, j;
 
@@ -670,12 +654,9 @@ function _drawBetweenLines(line1, line2) {
     }
 }
 
-
 function _drawTriangle(p0, p1, p2) {
     var ctx = this.drawBufferCtx;
     var img = this.image;
-    var imgWidth = img.width;
-    var imgHeight = img.height;
 
     // 各ポイントが動いている現在の座標系
     var p0coord = p0.getCurrentXY();
@@ -815,11 +796,9 @@ if (!global.Oppai) {
     throw new Error('Undefined objecct: "Oppai"');
 }
 var document = global.document;
-var Math = global.Math;
 
 function DoubleBufferingHandler(img, x, y, width, height) {
     var srcCanvas = this.srcCanvas = document.createElement('canvas');
-    var firstCanvas;
 
     srcCanvas.width = width;
     srcCanvas.height = height;
@@ -854,7 +833,7 @@ DoubleBufferingHandler.prototype = {
     getSrcCanvas: function() {
         return this.srcCanvas;
     },
-    getDrawBufferCtx: function(img) {
+    getDrawBufferCtx: function() {
         return this.contexts[this.currentBufferIndex];
     },
     drawComplete: function() {
@@ -896,7 +875,6 @@ function MotionHandler(handler) {
 MotionHandler.prototype = {
     constructor: MotionHandler,
     handleEvent: function(ev) {
-        var that = this;
         var acceleration = ev.acceleration;
         var distance = Math.sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y);
 

@@ -3,20 +3,20 @@
 'use strict';
 
 var Math = global.Math;
-var Date = global.Date;
 var document = global.document;
 var env = __getEnv(global.navigator.userAgent);
 var events = {
-        touchStart: env.isTouchDevice && "touchstart" || "mousedown",
-        touchMove:  env.isTouchDevice && "touchmove"  || "mousemove",
-        touchEnd:   env.isTouchDevice && "touchend"   || "mouseup"
+        touchStart : env.isTouchDevice && "touchstart" || "mousedown",
+        touchMove  : env.isTouchDevice && "touchmove"  || "mousemove",
+        touchEnd   : env.isTouchDevice && "touchend"   || "mouseup",
+        tap        : env.isTouchDevice && "touchstart" || "click",
 };
 var raf = global.requestAnimationFrame ||
           global.webkitRequestAnimationFrame ||
           global.mozRequestAnimationFrame ||
           global.oRequestAnimationFrame ||
           global.msRequestAnimationFrame ||
-          (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
+          (function(timing) { return function(cb) { global.setTimeout(cb, timing); }; })(1000/60);
 var defaultSetting = {
         dpr: 1,
         enableTouch: false
@@ -137,10 +137,9 @@ function _init() {
     var ctx = this.ctx;
     var image = this.image;
     var breasts = this.breasts;
-    var minX, minY, maxX, maxY;
+    var bb, minX, minY, maxX, maxY;
 
-    // NOTE. 描画領域設定用のダミー値
-    minX = minY = 99999999;
+    minX = minY = 99999;
     maxX = maxY = 0;
 
     canvas.width = image.width;
@@ -154,41 +153,42 @@ function _init() {
     // 最初の一回描画
     ctx.drawImage(image, 0, 0);
 
-    for (var i = 0, opp, b; opp = oppList[i]; i++) {
-        b = breasts[i] = new Oppai.Breast(ctx, image, opp);
-        minX = Math.min(minX, b.minX);
-        minY = Math.min(minY, b.minY);
-        maxX = Math.max(maxX, b.maxX);
-        maxY = Math.max(maxY, b.maxY);
+    for (var i = 0, opp; opp = oppList[i]; i++) {
+        breasts[i] = new Oppai.Breast(ctx, image, opp);
+        bb = breasts[i].getBoundingBox();
+        minX = Math.min(minX, bb.minX);
+        minY = Math.min(minY, bb.minY);
+        maxX = Math.max(maxX, bb.maxX);
+        maxY = Math.max(maxY, bb.maxY);
     }
     // NOTE. 設定する余白(一旦決め打ちで 20px )
     var allowance = 20;
 
-    this.bgDrawRect = {
+    this.drawAABB = {
         x: Math.max(0, minX - allowance),
         y: Math.max(0, minY - allowance),
         w: Math.min(canvas.width , maxX + allowance),
         h: Math.min(canvas.height, maxY + allowance)
     };
     // 基準値からの幅と高さなので、それぞれ x, y を引く
-    this.bgDrawRect.w -= this.bgDrawRect.x;
-    this.bgDrawRect.h -= this.bgDrawRect.y;
-    this.bgDrawRect.center = {
-        x: this.bgDrawRect.x + (this.bgDrawRect.w / 2),
-        y: this.bgDrawRect.y + (this.bgDrawRect.h / 2),
+    this.drawAABB.w -= this.drawAABB.x;
+    this.drawAABB.h -= this.drawAABB.y;
+    this.drawAABB.center = {
+        x: this.drawAABB.x + (this.drawAABB.w / 2),
+        y: this.drawAABB.y + (this.drawAABB.h / 2),
     };
 
     if (env.isTouchDevice && 'ondevicemotion' in global) {
         this._initTouchHandler();
     }
     if (this.setting.enableTouch) {
-        canvas.addEventListener(env.isTouchDevice ? 'touchstart' : 'click', this);
+        canvas.addEventListener(events.tap, this);
     }
     this.update();
 }
 
 function _handleEvent() {
-    this.bounce(90, 3000);
+    this.bounce(80, 3000);
 }
 
 function _initTouchHandler() {
@@ -235,16 +235,16 @@ function _loadImage(src, callback) {
 
 function _update() {
     var breasts = this.breasts;
-    var bgDrawRect = this.bgDrawRect;
+    var drawAABB = this.drawAABB;
 
-    if (!bgDrawRect) {
-        console.warn('bgDrawRect is not set yet');
+    if (!drawAABB) {
+        console.warn('drawAABB is not set yet');
         return;
     }
     // 胸の範囲を再描画
     this.ctx.drawImage(this.image,
-                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h,
-                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h);
+                       drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
+                       drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);
     for (var i = 0, b; b = breasts[i]; i++) {
         b.draw();
     }
@@ -370,9 +370,9 @@ function __getEnv(ua) {
     return res;
 }
 
-function __getTouchInfo(ev, name) {
-    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
-}
+//function __getTouchInfo(ev, name) {
+//    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
+//}
 
 //// export
 global.Oppai = Oppai;
@@ -457,8 +457,12 @@ Action.prototype = {
 };
 
 function __elasticEaseOut(t, b, c, d, a, p){
-    if (t==0)      return b;
-    if ((t/=d)==1) return b + c;
+    if (t===0) {
+        return b;
+    }
+    if ((t/=d)===1) {
+        return b + c;
+    }
     if (!p) {
         p = d * 0.3;
     }
@@ -494,147 +498,165 @@ var Math = global.Math;
  * @param {Array}  opp.area_coods [[x, y], [x, y], ...]
  */
 function Breast(ctx, image, opp) {
-    var roundCoords = opp.round_coords;
-
     this.isDebug = global.Oppai._debug;
     this.vertexPoint = null;
     this.radiallyLines = [];
     this.ctx = ctx;
-    this.image = image;
+    this.drawBufferCtx = null;
+    this.image = null;
     this.resolution = 2;
-    this.createPoints(opp);
+    this.initialize(opp, image);
 }
 
 Breast.prototype = {
     constructor: Breast,
-    draw: _draw,
-    drawTriangle: _drawTriangle,
-    createPoints: _createPoints,
-    moveTo: _moveTo
+    draw             : _draw,
+    drawBetweenLines : _drawBetweenLines,
+    drawTriangle     : _drawTriangle,
+    initialize       : _initialize,
+    moveTo           : _moveTo,
+    getBoundingBox   : _getBoundingBox
 };
 
 function _moveTo(rateX, rateY) {
     var vertexPoint = this.vertexPoint;
     var vx = (rateX / 100) * (
-                (rateX < 0) ? (vertexPoint.x - this.minX) :
-                (rateX > 0) ? (this.maxX - vertexPoint.x) : 0);
+                (rateX < 0) ? vertexPoint.x :
+                (rateX > 0) ? (this.width - vertexPoint.x) : 0);
     var vy = (rateY / 100) * (
-                (rateY < 0) ? (vertexPoint.y - this.minY) :
-                (rateY > 0) ? (this.maxY - vertexPoint.y) : 0);
+                (rateY < 0) ? vertexPoint.y :
+                (rateY > 0) ? (this.height - vertexPoint.y) : 0);
     var radiallyLines = this.radiallyLines;
     var radian = Math.atan2(vy, vx);
     var angle = __getAngleByRadian(radian);
     var dist = Math.sqrt(vx * vx + vy * vy);
     var minDist = dist;
     var weightBase = 1 / this.resolution;
-    var ral, point;
+    var line, point;
     var i = 0, j;
 
-    for (; ral = radiallyLines[i]; i++) {
+    this.drawBufferCtx = this.bufferHandler.getDrawBufferCtx();
+    this.drawBufferCtx.clearRect(0, 0, this.width + 1, this.height + 1);
+    vertexPoint.setMoveValue(vx, vy);
+    for (; line = radiallyLines[i]; i++) {
         // 一番外側から2番目が動く(一番外側は動かさない)
-        j = ral.length - 2;
+        j = line.length - 2;
 
-        while ((point = ral[j])) {
+        while ((point = line[j])) {
             var direction = Math.abs(angle - point.angle);
             var weight = weightBase * (j + 1);
 
-            switch (true) {
-                // 同方向
-                case (direction < 60):
-                    if (point.distance > dist) {
-                        if (minDist > point.distance) {
-                            minDist = point.distance;
-                            vx = minDist * Math.cos(radian) + vertexPoint.x;
-                            vy = minDist * Math.sin(radian) + vertexPoint.y;
-                        }
-                        weight *= 0.5;
-                    } else {
-                        weight *= 0.85;
+            // 同方向
+            if (direction < 60) {
+                if (point.distance > dist) {
+                    if (minDist > point.distance) {
+                        minDist = point.distance;
+                        vx = minDist * Math.cos(radian) + vertexPoint.x;
+                        vy = minDist * Math.sin(radian) + vertexPoint.y;
                     }
-                    break;
-                // 逆方向
-                case (direction > 300):
-                    weight *= 1.2;
-                    break;
+                    weight *= 0.5;
+                } else {
+                    weight *= 0.85;
+                }
             }
-            point.setMoveVolume(vx * weight, vy * weight);
+            // 逆方向
+            else if (direction > 300) {
+                weight *= 1.2;
+            }
+            point.setMoveValue(vx * weight, vy * weight);
             j--;
         }
+        if (i > 0) {
+            this.drawBetweenLines(
+                radiallyLines[i - 1],
+                line
+            );
+        }
     }
-    vertexPoint.setMoveVolume(vx, vy);
+    this.drawBetweenLines(
+        radiallyLines[i - 1],
+        radiallyLines[0]
+    );
+    this.bufferHandler.drawComplete();
 }
 
-function _createPoints(opp) {
+function _initialize(opp, img) {
     var vertex = opp.vertex;
     var resolution = this.resolution;
     var roundCoords = opp.round_coords;
     var radiallyLines = this.radiallyLines;
-    var linePointList;
     var minX, minY, maxX, maxY;
+    var width, height;
+    var i, coord;
 
     // 描画領域設定用
-    minX = minY = 99999999;
+    minX = minY = 99999;
     maxX = maxY = 0;
 
-    this.vertexPoint = new Point(vertex[0], vertex[1]);
-    for (var i = 0, coord; coord = roundCoords[i]; i++) {
-        radiallyLines[radiallyLines.length] = _getLinePointList(vertex, coord, resolution);
+    for (i = 0, coord = null; coord = roundCoords[i]; i++) {
         minX = Math.min(minX, coord[0]);
         minY = Math.min(minY, coord[1]);
         maxX = Math.max(maxX, coord[0]);
         maxY = Math.max(maxY, coord[1]);
     }
 
-    this.minX = minX;
-    this.minY = minY;
-    this.maxX = maxX;
-    this.maxY = maxY;
-    this.moveRangeX = (maxX - minX) / 2;
-    this.moveRangeY = (maxY - minY) / 2;
+    var vx = vertex[0] - minX;
+    var vy = vertex[1] - minY;
 
-    function _getLinePointList(vertex, outer, resolution) {
+    this.vertexPoint = new Point(vx, vy);
+    // NOTE. 2回回すのはダサいが…
+    for (i = 0, coord = null; coord = roundCoords[i]; i++) {
+        radiallyLines[radiallyLines.length] = _getLinePointList(
+            vx, vy,
+            coord[0] - minX,
+            coord[1] - minY,
+            resolution);
+    }
+
+    this.baseX = minX;
+    this.baseY = minY;
+    this.width = width = maxX - minX;
+    this.height = height = maxY - minY;
+    this.bufferHandler = new Oppai.DoubleBufferingHandler(img, minX, minY, width, height);
+    this.image = this.bufferHandler.getSrcCanvas();
+
+    function _getLinePointList(vx, vy, ox, oy, resolution) {
         var res = [];
 
         if (resolution > 1) {
-            var vx = vertex[0];
-            var vy = vertex[1];
-            var dx = (outer[0] - vx) / resolution;
-            var dy = (outer[1] - vy) / resolution;
+            var dx = (ox - vx) / resolution;
+            var dy = (oy - vy) / resolution;
 
             for (var i = 1; i < resolution; i++) {
-                res[res.length] = new Point(vx + (dx * i), vy + (dy * i), vertex[0], vertex[1]);
+                res[res.length] = new Point(vx + (dx * i), vy + (dy * i), vx, vy);
             }
         }
-        res[res.length] = new Point(outer[0], outer[1], vertex[0], vertex[1]);
+        res[res.length] = new Point(ox, oy, vx, vy);
         return res;
     }
 }
 
 function _draw() {
-    var vertexPoint = this.vertexPoint;
-    var radiallyLines = this.radiallyLines;
-    var ral, nextRal;
-    var i = 0, j, k;
+    this.ctx.drawImage(
+        this.bufferHandler.getDrewCanvas(),
+        this.baseX, this.baseY
+    );
+}
 
-    for (; ral = radiallyLines[i]; i++) {
-        nextRal = radiallyLines[i + 1] || radiallyLines[0];
-        j = 0;
+function _drawBetweenLines(line1, line2) {
+    var i = 0, j;
 
-        this.drawTriangle(ral[j], nextRal[j], vertexPoint);
-        while (!!ral[(k = j + 1)]) {
-            this.drawTriangle(ral[j], nextRal[j], ral[k]);
-            this.drawTriangle(nextRal[j], ral[k], nextRal[k]);
-            j++;
-        }
+    this.drawTriangle(line1[i], line2[i], this.vertexPoint);
+    while (!!line1[(j = i + 1)]) {
+        this.drawTriangle(line1[i], line2[i], line1[j]);
+        this.drawTriangle(line2[i], line1[j], line2[j]);
+        ++i;
     }
 }
 
-
 function _drawTriangle(p0, p1, p2) {
-    var ctx = this.ctx;
+    var ctx = this.drawBufferCtx;
     var img = this.image;
-    var imgWidth = img.width;
-    var imgHeight = img.height;
 
     // 各ポイントが動いている現在の座標系
     var p0coord = p0.getCurrentXY();
@@ -682,12 +704,21 @@ function _drawTriangle(p0, p1, p2) {
     ctx.transform(a, b, c, d,
         p0x - (a * p0.x + c * p0.y),
         p0y - (b * p0.x + d * p0.y));
-    ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
+    ctx.drawImage(img, 0, 0);
     if (this.isDebug) {
         ctx.strokeStyle = 'blue';
         ctx.stroke();
     }
     ctx.restore();
+}
+
+function _getBoundingBox() {
+    return {
+        minX: this.baseX,
+        minY: this.baseY,
+        maxX: this.baseX + this.width,
+        maxY: this.baseY + this.height
+    };
 }
 
 function Point(x, y, vx, vy) {
@@ -713,7 +744,7 @@ function Point(x, y, vx, vy) {
 Point.prototype = {
     constructor: Point,
     getCurrentXY: _getCurrentXY,
-    setMoveVolume: _setMoveVolume
+    setMoveValue: _setMoveValue
 };
 
 function _getCurrentXY() {
@@ -723,7 +754,7 @@ function _getCurrentXY() {
     };
 }
 
-function _setMoveVolume(x, y) {
+function _setMoveValue(x, y) {
     this.moveX = x;
     this.moveY = -y;
 }
@@ -764,6 +795,69 @@ global.Oppai.Breast = Breast;
 if (!global.Oppai) {
     throw new Error('Undefined objecct: "Oppai"');
 }
+var document = global.document;
+
+function DoubleBufferingHandler(img, x, y, width, height) {
+    var srcCanvas = this.srcCanvas = document.createElement('canvas');
+
+    srcCanvas.width = width;
+    srcCanvas.height = height;
+    this.srcCtx = srcCanvas.getContext('2d');
+
+    this.canvases = [];
+    this.contexts = [];
+
+    for (var i = 0, iz = 2, canvas; i < iz; i++) {
+        canvas = srcCanvas.cloneNode();
+        this.canvases.push(canvas);
+        this.contexts.push(canvas.getContext('2d'));
+    }
+
+    this.currentBufferIndex = 0;
+    this.drewBufferIndex = 1;
+
+    this.srcCtx.drawImage(img,
+                          x, y, width, height,
+                          0, 0, width, height);
+
+    if (global.Oppai._debug) {
+        document.body.appendChild(this.srcCanvas);
+        for (var j = 0, c; c = this.canvases[j]; j++) {
+            document.body.appendChild(c);
+        }
+    }
+}
+
+DoubleBufferingHandler.prototype = {
+    constructor: DoubleBufferingHandler,
+    getSrcCanvas: function() {
+        return this.srcCanvas;
+    },
+    getDrawBufferCtx: function() {
+        return this.contexts[this.currentBufferIndex];
+    },
+    drawComplete: function() {
+        var drew = this.drewBufferIndex;
+
+        this.drewBufferIndex = this.currentBufferIndex;
+        this.currentBufferIndex = drew;
+    },
+    getDrewCanvas: function() {
+        return this.canvases[this.drewBufferIndex];
+    }
+};
+
+//// export
+global.Oppai.DoubleBufferingHandler = DoubleBufferingHandler;
+
+})(this.self || global, void 0);
+
+;(function(global, undefined) {
+'use strict';
+
+if (!global.Oppai) {
+    throw new Error('Undefined objecct: "Oppai"');
+}
 var Math = global.Math;
 var STATES = {
         NONE: 0,
@@ -781,7 +875,6 @@ function MotionHandler(handler) {
 MotionHandler.prototype = {
     constructor: MotionHandler,
     handleEvent: function(ev) {
-        var that = this;
         var acceleration = ev.acceleration;
         var distance = Math.sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y);
 

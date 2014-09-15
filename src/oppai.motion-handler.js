@@ -21,7 +21,6 @@ function MotionHandler(handler) {
 MotionHandler.prototype = {
     constructor: MotionHandler,
     handleEvent: function(ev) {
-        var that = this;
         var acceleration = ev.acceleration;
         var distance = Math.sqrt(acceleration.x * acceleration.x + acceleration.y * acceleration.y);
 

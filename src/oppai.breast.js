@@ -14,147 +14,165 @@ var Math = global.Math;
  * @param {Array}  opp.area_coods [[x, y], [x, y], ...]
  */
 function Breast(ctx, image, opp) {
-    var roundCoords = opp.round_coords;
-
     this.isDebug = global.Oppai._debug;
     this.vertexPoint = null;
     this.radiallyLines = [];
     this.ctx = ctx;
-    this.image = image;
+    this.drawBufferCtx = null;
+    this.image = null;
     this.resolution = 2;
-    this.createPoints(opp);
+    this.initialize(opp, image);
 }
 
 Breast.prototype = {
     constructor: Breast,
-    draw: _draw,
-    drawTriangle: _drawTriangle,
-    createPoints: _createPoints,
-    moveTo: _moveTo
+    draw             : _draw,
+    drawBetweenLines : _drawBetweenLines,
+    drawTriangle     : _drawTriangle,
+    initialize       : _initialize,
+    moveTo           : _moveTo,
+    getBoundingBox   : _getBoundingBox
 };
 
 function _moveTo(rateX, rateY) {
     var vertexPoint = this.vertexPoint;
     var vx = (rateX / 100) * (
-                (rateX < 0) ? (vertexPoint.x - this.minX) :
-                (rateX > 0) ? (this.maxX - vertexPoint.x) : 0);
+                (rateX < 0) ? vertexPoint.x :
+                (rateX > 0) ? (this.width - vertexPoint.x) : 0);
     var vy = (rateY / 100) * (
-                (rateY < 0) ? (vertexPoint.y - this.minY) :
-                (rateY > 0) ? (this.maxY - vertexPoint.y) : 0);
+                (rateY < 0) ? vertexPoint.y :
+                (rateY > 0) ? (this.height - vertexPoint.y) : 0);
     var radiallyLines = this.radiallyLines;
     var radian = Math.atan2(vy, vx);
     var angle = __getAngleByRadian(radian);
     var dist = Math.sqrt(vx * vx + vy * vy);
     var minDist = dist;
     var weightBase = 1 / this.resolution;
-    var ral, point;
+    var line, point;
     var i = 0, j;
 
-    for (; ral = radiallyLines[i]; i++) {
+    this.drawBufferCtx = this.bufferHandler.getDrawBufferCtx();
+    this.drawBufferCtx.clearRect(0, 0, this.width + 1, this.height + 1);
+    vertexPoint.setMoveValue(vx, vy);
+    for (; line = radiallyLines[i]; i++) {
         // 一番外側から2番目が動く(一番外側は動かさない)
-        j = ral.length - 2;
+        j = line.length - 2;
 
-        while ((point = ral[j])) {
+        while ((point = line[j])) {
             var direction = Math.abs(angle - point.angle);
             var weight = weightBase * (j + 1);
 
-            switch (true) {
-                // 同方向
-                case (direction < 60):
-                    if (point.distance > dist) {
-                        if (minDist > point.distance) {
-                            minDist = point.distance;
-                            vx = minDist * Math.cos(radian) + vertexPoint.x;
-                            vy = minDist * Math.sin(radian) + vertexPoint.y;
-                        }
-                        weight *= 0.5;
-                    } else {
-                        weight *= 0.85;
+            // 同方向
+            if (direction < 60) {
+                if (point.distance > dist) {
+                    if (minDist > point.distance) {
+                        minDist = point.distance;
+                        vx = minDist * Math.cos(radian) + vertexPoint.x;
+                        vy = minDist * Math.sin(radian) + vertexPoint.y;
                     }
-                    break;
-                // 逆方向
-                case (direction > 300):
-                    weight *= 1.2;
-                    break;
+                    weight *= 0.5;
+                } else {
+                    weight *= 0.85;
+                }
             }
-            point.setMoveVolume(vx * weight, vy * weight);
+            // 逆方向
+            else if (direction > 300) {
+                weight *= 1.2;
+            }
+            point.setMoveValue(vx * weight, vy * weight);
             j--;
         }
+        if (i > 0) {
+            this.drawBetweenLines(
+                radiallyLines[i - 1],
+                line
+            );
+        }
     }
-    vertexPoint.setMoveVolume(vx, vy);
+    this.drawBetweenLines(
+        radiallyLines[i - 1],
+        radiallyLines[0]
+    );
+    this.bufferHandler.drawComplete();
 }
 
-function _createPoints(opp) {
+function _initialize(opp, img) {
     var vertex = opp.vertex;
     var resolution = this.resolution;
     var roundCoords = opp.round_coords;
     var radiallyLines = this.radiallyLines;
-    var linePointList;
     var minX, minY, maxX, maxY;
+    var width, height;
+    var i, coord;
 
     // 描画領域設定用
-    minX = minY = 99999999;
+    minX = minY = 99999;
     maxX = maxY = 0;
 
-    this.vertexPoint = new Point(vertex[0], vertex[1]);
-    for (var i = 0, coord; coord = roundCoords[i]; i++) {
-        radiallyLines[radiallyLines.length] = _getLinePointList(vertex, coord, resolution);
+    for (i = 0, coord = null; coord = roundCoords[i]; i++) {
         minX = Math.min(minX, coord[0]);
         minY = Math.min(minY, coord[1]);
         maxX = Math.max(maxX, coord[0]);
         maxY = Math.max(maxY, coord[1]);
     }
 
-    this.minX = minX;
-    this.minY = minY;
-    this.maxX = maxX;
-    this.maxY = maxY;
-    this.moveRangeX = (maxX - minX) / 2;
-    this.moveRangeY = (maxY - minY) / 2;
+    var vx = vertex[0] - minX;
+    var vy = vertex[1] - minY;
 
-    function _getLinePointList(vertex, outer, resolution) {
+    this.vertexPoint = new Point(vx, vy);
+    // NOTE. 2回回すのはダサいが…
+    for (i = 0, coord = null; coord = roundCoords[i]; i++) {
+        radiallyLines[radiallyLines.length] = _getLinePointList(
+            vx, vy,
+            coord[0] - minX,
+            coord[1] - minY,
+            resolution);
+    }
+
+    this.baseX = minX;
+    this.baseY = minY;
+    this.width = width = maxX - minX;
+    this.height = height = maxY - minY;
+    this.bufferHandler = new Oppai.DoubleBufferingHandler(img, minX, minY, width, height);
+    this.image = this.bufferHandler.getSrcCanvas();
+
+    function _getLinePointList(vx, vy, ox, oy, resolution) {
         var res = [];
 
         if (resolution > 1) {
-            var vx = vertex[0];
-            var vy = vertex[1];
-            var dx = (outer[0] - vx) / resolution;
-            var dy = (outer[1] - vy) / resolution;
+            var dx = (ox - vx) / resolution;
+            var dy = (oy - vy) / resolution;
 
             for (var i = 1; i < resolution; i++) {
-                res[res.length] = new Point(vx + (dx * i), vy + (dy * i), vertex[0], vertex[1]);
+                res[res.length] = new Point(vx + (dx * i), vy + (dy * i), vx, vy);
             }
         }
-        res[res.length] = new Point(outer[0], outer[1], vertex[0], vertex[1]);
+        res[res.length] = new Point(ox, oy, vx, vy);
         return res;
     }
 }
 
 function _draw() {
-    var vertexPoint = this.vertexPoint;
-    var radiallyLines = this.radiallyLines;
-    var ral, nextRal;
-    var i = 0, j, k;
+    this.ctx.drawImage(
+        this.bufferHandler.getDrewCanvas(),
+        this.baseX, this.baseY
+    );
+}
 
-    for (; ral = radiallyLines[i]; i++) {
-        nextRal = radiallyLines[i + 1] || radiallyLines[0];
-        j = 0;
+function _drawBetweenLines(line1, line2) {
+    var i = 0, j;
 
-        this.drawTriangle(ral[j], nextRal[j], vertexPoint);
-        while (!!ral[(k = j + 1)]) {
-            this.drawTriangle(ral[j], nextRal[j], ral[k]);
-            this.drawTriangle(nextRal[j], ral[k], nextRal[k]);
-            j++;
-        }
+    this.drawTriangle(line1[i], line2[i], this.vertexPoint);
+    while (!!line1[(j = i + 1)]) {
+        this.drawTriangle(line1[i], line2[i], line1[j]);
+        this.drawTriangle(line2[i], line1[j], line2[j]);
+        ++i;
     }
 }
 
-
 function _drawTriangle(p0, p1, p2) {
-    var ctx = this.ctx;
+    var ctx = this.drawBufferCtx;
     var img = this.image;
-    var imgWidth = img.width;
-    var imgHeight = img.height;
 
     // 各ポイントが動いている現在の座標系
     var p0coord = p0.getCurrentXY();
@@ -202,12 +220,21 @@ function _drawTriangle(p0, p1, p2) {
     ctx.transform(a, b, c, d,
         p0x - (a * p0.x + c * p0.y),
         p0y - (b * p0.x + d * p0.y));
-    ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
+    ctx.drawImage(img, 0, 0);
     if (this.isDebug) {
         ctx.strokeStyle = 'blue';
         ctx.stroke();
     }
     ctx.restore();
+}
+
+function _getBoundingBox() {
+    return {
+        minX: this.baseX,
+        minY: this.baseY,
+        maxX: this.baseX + this.width,
+        maxY: this.baseY + this.height
+    };
 }
 
 function Point(x, y, vx, vy) {
@@ -233,7 +260,7 @@ function Point(x, y, vx, vy) {
 Point.prototype = {
     constructor: Point,
     getCurrentXY: _getCurrentXY,
-    setMoveVolume: _setMoveVolume
+    setMoveValue: _setMoveValue
 };
 
 function _getCurrentXY() {
@@ -243,7 +270,7 @@ function _getCurrentXY() {
     };
 }
 
-function _setMoveVolume(x, y) {
+function _setMoveValue(x, y) {
     this.moveX = x;
     this.moveY = -y;
 }

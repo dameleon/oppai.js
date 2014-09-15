@@ -70,8 +70,12 @@ Action.prototype = {
 };
 
 function __elasticEaseOut(t, b, c, d, a, p){
-    if (t==0)      return b;
-    if ((t/=d)==1) return b + c;
+    if (t===0) {
+        return b;
+    }
+    if ((t/=d)===1) {
+        return b + c;
+    }
     if (!p) {
         p = d * 0.3;
     }

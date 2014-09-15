@@ -2,20 +2,20 @@
 'use strict';
 
 var Math = global.Math;
-var Date = global.Date;
 var document = global.document;
 var env = __getEnv(global.navigator.userAgent);
 var events = {
-        touchStart: env.isTouchDevice && "touchstart" || "mousedown",
-        touchMove:  env.isTouchDevice && "touchmove"  || "mousemove",
-        touchEnd:   env.isTouchDevice && "touchend"   || "mouseup"
+        touchStart : env.isTouchDevice && "touchstart" || "mousedown",
+        touchMove  : env.isTouchDevice && "touchmove"  || "mousemove",
+        touchEnd   : env.isTouchDevice && "touchend"   || "mouseup",
+        tap        : env.isTouchDevice && "touchstart" || "click",
 };
 var raf = global.requestAnimationFrame ||
           global.webkitRequestAnimationFrame ||
           global.mozRequestAnimationFrame ||
           global.oRequestAnimationFrame ||
           global.msRequestAnimationFrame ||
-          (function(timing) { return function(cb) { global.setTimeout(cb, timing); } })(1000/60);
+          (function(timing) { return function(cb) { global.setTimeout(cb, timing); }; })(1000/60);
 var defaultSetting = {
         dpr: 1,
         enableTouch: false
@@ -136,10 +136,9 @@ function _init() {
     var ctx = this.ctx;
     var image = this.image;
     var breasts = this.breasts;
-    var minX, minY, maxX, maxY;
+    var bb, minX, minY, maxX, maxY;
 
-    // NOTE. 描画領域設定用のダミー値
-    minX = minY = 99999999;
+    minX = minY = 99999;
     maxX = maxY = 0;
 
     canvas.width = image.width;
@@ -153,41 +152,42 @@ function _init() {
     // 最初の一回描画
     ctx.drawImage(image, 0, 0);
 
-    for (var i = 0, opp, b; opp = oppList[i]; i++) {
-        b = breasts[i] = new Oppai.Breast(ctx, image, opp);
-        minX = Math.min(minX, b.minX);
-        minY = Math.min(minY, b.minY);
-        maxX = Math.max(maxX, b.maxX);
-        maxY = Math.max(maxY, b.maxY);
+    for (var i = 0, opp; opp = oppList[i]; i++) {
+        breasts[i] = new Oppai.Breast(ctx, image, opp);
+        bb = breasts[i].getBoundingBox();
+        minX = Math.min(minX, bb.minX);
+        minY = Math.min(minY, bb.minY);
+        maxX = Math.max(maxX, bb.maxX);
+        maxY = Math.max(maxY, bb.maxY);
     }
     // NOTE. 設定する余白(一旦決め打ちで 20px )
     var allowance = 20;
 
-    this.bgDrawRect = {
+    this.drawAABB = {
         x: Math.max(0, minX - allowance),
         y: Math.max(0, minY - allowance),
         w: Math.min(canvas.width , maxX + allowance),
         h: Math.min(canvas.height, maxY + allowance)
     };
     // 基準値からの幅と高さなので、それぞれ x, y を引く
-    this.bgDrawRect.w -= this.bgDrawRect.x;
-    this.bgDrawRect.h -= this.bgDrawRect.y;
-    this.bgDrawRect.center = {
-        x: this.bgDrawRect.x + (this.bgDrawRect.w / 2),
-        y: this.bgDrawRect.y + (this.bgDrawRect.h / 2),
+    this.drawAABB.w -= this.drawAABB.x;
+    this.drawAABB.h -= this.drawAABB.y;
+    this.drawAABB.center = {
+        x: this.drawAABB.x + (this.drawAABB.w / 2),
+        y: this.drawAABB.y + (this.drawAABB.h / 2),
     };
 
     if (env.isTouchDevice && 'ondevicemotion' in global) {
         this._initTouchHandler();
     }
     if (this.setting.enableTouch) {
-        canvas.addEventListener(env.isTouchDevice ? 'touchstart' : 'click', this);
+        canvas.addEventListener(events.tap, this);
     }
     this.update();
 }
 
 function _handleEvent() {
-    this.bounce(90, 3000);
+    this.bounce(80, 3000);
 }
 
 function _initTouchHandler() {
@@ -234,16 +234,16 @@ function _loadImage(src, callback) {
 
 function _update() {
     var breasts = this.breasts;
-    var bgDrawRect = this.bgDrawRect;
+    var drawAABB = this.drawAABB;
 
-    if (!bgDrawRect) {
-        console.warn('bgDrawRect is not set yet');
+    if (!drawAABB) {
+        console.warn('drawAABB is not set yet');
         return;
     }
     // 胸の範囲を再描画
     this.ctx.drawImage(this.image,
-                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h,
-                       bgDrawRect.x, bgDrawRect.y, bgDrawRect.w, bgDrawRect.h);
+                       drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
+                       drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);
     for (var i = 0, b; b = breasts[i]; i++) {
         b.draw();
     }
@@ -369,9 +369,9 @@ function __getEnv(ua) {
     return res;
 }
 
-function __getTouchInfo(ev, name) {
-    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
-}
+//function __getTouchInfo(ev, name) {
+//    return env.isTouchDevice ? ev.changedTouches[0][name] : ev[name];
+//}
 
 //// export
 global.Oppai = Oppai;
