@@ -883,7 +883,7 @@ global.Oppai.DoubleBufferingHandler = DoubleBufferingHandler;
 'use strict';
 
 if (!global.Oppai) {
-    throw new Error('Undefined objecct: "Oppai"');
+    throw new Error('Undefined object: "Oppai"');
 }
 var Math = global.Math;
 var STATES = {
