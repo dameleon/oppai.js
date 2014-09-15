@@ -23,19 +23,17 @@ gulp.task('dist', function() {
         }))
         .pipe(header(BANNER, pkg))
         .pipe(gulp.dest('dist/'))
-        .pipe(gulp.dest('sample/js/'))
 });
 
-gulp.task('sample-dist', function() {
+gulp.task('dist-sample', function() {
     gulp.src(['src/oppai.js', 'src/*.js'])
         .pipe(concat('oppai.js'))
         .pipe(header(BANNER, pkg))
-        .pipe(gulp.dest('dist/'))
         .pipe(gulp.dest('sample/js/'))
 });
 
-gulp.task('develop', ['sample-dist'], function() {
-    gulp.watch('src/**/*.js', ['jshint', 'sample-dist']);
+gulp.task('develop', ['dist-sample'], function() {
+    gulp.watch('src/**/*.js', ['jshint', 'dist-sample']);
     connect.server({
         root: ['sample'],
         port: 8000,
