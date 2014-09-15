@@ -519,6 +519,7 @@ Breast.prototype = {
 };
 
 function _moveTo(rateX, rateY) {
+    var resolution = this.resolution;
     var vertexPoint = this.vertexPoint;
     var vx = (rateX / 100) * (
                 (rateX < 0) ? vertexPoint.x :
@@ -530,17 +531,42 @@ function _moveTo(rateX, rateY) {
     var radian = Math.atan2(vy, vx);
     var angle = __getAngleByRadian(radian);
     var dist = Math.sqrt(vx * vx + vy * vy);
-    var minDist = dist;
     var weightBase = 1 / this.resolution;
     var line, point;
     var i = 0, j;
+
+    // 頂点の移動距離を制限するので、現在のangleと中心から四方に4分割したうち該当する方向の円の半径と比較する
+    var limitDist, limitX, limitY;
+
+    if (0 <= angle && angle < 90) {
+        limitX = this.width - vertexPoint.x;
+        limitY = vertexPoint.y;
+    }
+    else if (90 <= angle && angle < 180) {
+        limitX = vertexPoint.x;
+        limitY = vertexPoint.y;
+    }
+    else if (180 <= angle && angle < 270) {
+        limitX = vertexPoint.x;
+        limitY = this.height - vertexPoint.y;
+    }
+    else if (270 <= angle) {
+        limitX = this.width - vertexPoint.x;
+        limitY = this.height - vertexPoint.y;
+    }
+    limitDist = Math.sqrt(limitX * limitX + limitY * limitY);
+    if (dist > limitDist) {
+        dist = limitDist;
+        vx = limitDist * Math.cos(radian) + vertexPoint.x;
+        vy = limitDist * Math.sin(radian) + vertexPoint.y;
+    }
 
     this.drawBufferCtx = this.bufferHandler.getDrawBufferCtx();
     this.drawBufferCtx.clearRect(0, 0, this.width + 1, this.height + 1);
     vertexPoint.setMoveValue(vx, vy);
     for (; line = radiallyLines[i]; i++) {
-        // 一番外側から2番目が動く(一番外側は動かさない)
-        j = line.length - 2;
+        // 一番外側は動かない
+        j = line.length - resolution;
 
         while ((point = line[j])) {
             var direction = Math.abs(angle - point.angle);
@@ -549,11 +575,6 @@ function _moveTo(rateX, rateY) {
             // 同方向
             if (direction < 60) {
                 if (point.distance > dist) {
-                    if (minDist > point.distance) {
-                        minDist = point.distance;
-                        vx = minDist * Math.cos(radian) + vertexPoint.x;
-                        vy = minDist * Math.sin(radian) + vertexPoint.y;
-                    }
                     weight *= 0.5;
                 } else {
                     weight *= 0.85;
