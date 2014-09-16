@@ -22,7 +22,10 @@ document.addEventListener("DOMContentLoaded", function() {
             vertex: [398, 431],
             round_coords:   [[361, 389], [403, 404], [431, 432], [422, 466], [389, 481], [352, 471], [335, 438], [340, 406]]
         };
-    var oppai = new Oppai("#viewer", "images/pai_03.jpg", { enableTouch: true }, left, right);
+    var oppai = new Oppai("#viewer", "images/pai_03.jpg", {
+        enableTouch: true,
+        dpr: (Oppai.env.isAndroid || Oppai.env.isIos) ? 2 : 1
+    }, left, right);
 
     oppai.load(function() {
         window.pai = oppai;
