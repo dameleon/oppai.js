@@ -1,0 +1,316 @@
+@charset "UTF-8";
+
+/**
+ * "HTML5 BASE CSS"
+ * v1.1 2011-11-25
+ * Tuned by Kei Takahashi
+ * 
+ * With reference to
+ *  HTML5 Doctor Reset v1.6.1: http://html5doctor.com/html-5-reset-stylesheet/
+ *  normalize.css 2011-11-04T15:38 UTC: http://github.com/necolas/normalize.css
+ */
+
+
+/* HTML5 display definitions */
+article,aside,details,figcaption,figure,footer,header,hgroup,nav,section {
+	display: block;
+}
+
+audio,canvas,video {
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+}
+
+audio:not([controls]) {
+	display: none;
+}
+
+/*---- Soft Reset ----*/
+html, body, h1, h2, h3, h4, h5, h6,
+div, p, ul, ol, dl, dd,
+figure, pre, blockquote{
+	margin: 0;
+	padding: 0;
+}
+
+
+/*----- Root -----*/
+html {
+	overflow-y: scroll;
+	font-size: 100%;
+	-webkit-text-size-adjust: 100%;
+	-ms-text-size-adjust: 100%;
+}
+
+/*----- Sectioning Elements -----*/
+body {
+	font-size:62.5%;
+	font-family:'メイリオ',Meiryo,'ヒラギノ角ゴ Pro W3','Hiragino Kaku Gothic Pro','ＭＳ Ｐゴシック',Osaka,sans-serif;
+	color:#000;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-size: 1em;
+}
+
+/*----- List Elements -----*/
+li {
+	list-style: none;
+}
+
+
+/*----- Table Elements -----*/
+table {
+	border-collapse:collapse;
+	border-spacing:0;
+}
+
+
+/*----- Flow Contents -----*/
+a{
+
+}
+a:focus {
+	outline: thin dotted;
+}
+a:hover,
+a:active {
+	outline: 0;
+}
+
+
+pre, code, kbd, samp {
+	font-family: monospace, sans-serif;
+	font-size: 1em;
+}
+
+pre {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+blockquote, q {
+	quotes:none;
+	font-style: italic;
+}
+
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content:'';
+	content:none;
+}
+
+strong { 
+	font-weight: bold; 
+}
+
+small {
+	font-size: 0.75em;
+}
+
+mark {
+	background: #ff0;
+	color: #000;
+}
+
+ins {
+	background-color:#ff9;
+	color:#000;
+	text-decoration:none;
+}
+
+del {
+	text-decoration: line-through;
+}
+
+abbr, dfn {
+	font-style: italic;
+}
+
+abbr[title], dfn[title] {
+	border-bottom:1px dotted;
+	cursor:help;
+}
+
+sub, sup {
+	font-size: 75%;
+	line-height: 0;
+	position: relative;
+	vertical-align: baseline;
+}
+	
+sup {
+	top: -0.5em;
+}
+
+sub {
+	bottom: -0.25em;
+}
+
+hr {
+	-moz-box-sizing: content-box;
+	height: 0;
+}
+
+
+
+/*----- Embedded Elements -----*/
+
+img {
+	border: 0;
+	vertical-align: middle;
+	-ms-interpolation-mode: bicubic;
+}
+
+svg:not(:root) {
+	overflow: hidden;
+}
+
+
+/*----- Form Elements -----*/
+
+fieldset {
+	margin: 0;
+	padding: 0.35em 0.625em 0.75em;
+	border: 1px solid #eee;
+}
+
+legend {
+	*margin-left: -7px;
+	border: 0;
+}
+
+select {
+	background-color: inherit;
+}
+
+button, input, select, textarea {
+	margin:0;
+	line-height: normal;
+	vertical-align: baseline;
+	*vertical-align: middle;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: normal;
+}
+
+textarea {
+	overflow: auto;
+	vertical-align: top;
+}
+
+input[type="button"], 
+input[type="reset"], 
+input[type="submit"] {
+	padding:3px 1em;
+	cursor: pointer;
+	-webkit-appearance: button;
+	*overflow: visible;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+	padding: 0;
+	box-sizing: border-box;
+}
+
+input[type="search"] {
+	-webkit-appearance: textfield;
+	-moz-box-sizing: content-box;
+	-webkit-box-sizing: content-box;
+	box-sizing: content-box;
+}
+
+input[type="search"]::-webkit-search-decoration {
+	-webkit-appearance: none;
+}
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+	padding: 0;
+	border: 0;
+}
+
+
+
+/*==================== KIRITORI ====================*/
+
+/*----- Useful class -----*/
+
+/* Clearfix */
+.clearfix:before,
+.clearfix:after {
+	content: "";
+	display: block;
+	overflow: hidden;
+}
+.clearfix:after {
+	clear: both;
+}
+.clearfix {
+	zoom: 1;
+}
+
+
+/* Horizon List */
+.horizonList {
+	display: inline-block;
+	*display: inline;
+	margin: 0 auto;
+	overflow: hidden;
+}
+.horizonList > li {
+	float: left;
+}
+
+
+/* Key-Value Box */
+.horizonKVBox {
+	overflow: hidden;
+	margin-bottom: 10px;
+	padding: 5px;
+}
+.horizonKVBox > .key {
+	float: left;
+	width: 25%;
+	font-weight: bold;
+}
+.horizonKVBox > .val {
+	float: left;
+	width: 75%;
+}
+.horizonKVBox > .val:after {
+	content: "";
+	clear: both;
+	display: block;
+	border-bottom: 1px #eee solid;
+}
+
+.verticalKVBox {
+	margin-bottom: 10px;
+	padding: 5px;
+}
+.verticalKVBox > .key {
+	padding: 4px;
+	font-weight: bold;
+}
+.verticalKVBox > .val {
+	padding: 0 10px;
+	border-bottom: 1px #eee solid;
+}
+
+
+.mg0a{ margin:0 auto; }
+
+.ofMg{ margin: 0 !important; }
+.ofPd{ padding: 0 !important; }
+.ofBg{ background: none !important; }
+.ofBd{ border: none !important; }
+
+.taL{ text-align: left !important; }
+.taC{ text-align: center !important; }
+.taR{ text-align: right !important; }
+
+.flL{ float: left !important; }
+.flR{ float: right !important; }
