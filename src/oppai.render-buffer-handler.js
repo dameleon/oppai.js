@@ -6,7 +6,7 @@ if (!global.Oppai) {
 }
 var document = global.document;
 
-function DoubleBufferingHandler(img, x, y, width, height) {
+function RenderBufferHandler(img, x, y, width, height) {
     var srcCanvas = this.srcCanvas = document.createElement('canvas');
 
     srcCanvas.width = width;
@@ -37,8 +37,8 @@ function DoubleBufferingHandler(img, x, y, width, height) {
     }
 }
 
-DoubleBufferingHandler.prototype = {
-    constructor: DoubleBufferingHandler,
+RenderBufferHandler.prototype = {
+    constructor: RenderBufferHandler,
     getSrcCanvas: function() {
         return this.srcCanvas;
     },
@@ -57,6 +57,6 @@ DoubleBufferingHandler.prototype = {
 };
 
 //// export
-global.Oppai.DoubleBufferingHandler = DoubleBufferingHandler;
+global.Oppai.RenderBufferHandler = RenderBufferHandler;
 
 })(this.self || global, void 0);

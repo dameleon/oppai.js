@@ -159,7 +159,7 @@ function _initialize(opp, img) {
     this.baseY = minY;
     this.width = width = maxX - minX;
     this.height = height = maxY - minY;
-    this.bufferHandler = new Oppai.DoubleBufferingHandler(img, minX, minY, width, height);
+    this.bufferHandler = new Oppai.RenderBufferHandler(img, minX, minY, width, height);
     this.image = this.bufferHandler.getSrcCanvas();
 
     function _getLinePointList(vx, vy, ox, oy, resolution) {

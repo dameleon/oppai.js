@@ -243,7 +243,7 @@ function _update() {
         return;
     }
     // 胸の範囲を再描画
-    // FIXME. そもそも doublebuffer の方でやりたい人生だった
+    // FIXME. そもそも renderbuffer の方でやりたい人生だった
     this.ctx.drawImage(this.image,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);

@@ -244,7 +244,7 @@ function _update() {
         return;
     }
     // 胸の範囲を再描画
-    // FIXME. そもそも doublebuffer の方でやりたい人生だった
+    // FIXME. そもそも renderbuffer の方でやりたい人生だった
     this.ctx.drawImage(this.image,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h,
                        drawAABB.x, drawAABB.y, drawAABB.w, drawAABB.h);
@@ -642,7 +642,7 @@ function _initialize(opp, img) {
     this.baseY = minY;
     this.width = width = maxX - minX;
     this.height = height = maxY - minY;
-    this.bufferHandler = new Oppai.DoubleBufferingHandler(img, minX, minY, width, height);
+    this.bufferHandler = new Oppai.RenderBufferHandler(img, minX, minY, width, height);
     this.image = this.bufferHandler.getSrcCanvas();
 
     function _getLinePointList(vx, vy, ox, oy, resolution) {
@@ -822,69 +822,6 @@ global.Oppai.Breast = Breast;
 if (!global.Oppai) {
     throw new Error('Undefined object: "Oppai"');
 }
-var document = global.document;
-
-function DoubleBufferingHandler(img, x, y, width, height) {
-    var srcCanvas = this.srcCanvas = document.createElement('canvas');
-
-    srcCanvas.width = width;
-    srcCanvas.height = height;
-    this.srcCtx = srcCanvas.getContext('2d');
-
-    this.canvases = [];
-    this.contexts = [];
-
-    for (var i = 0, iz = 2, canvas; i < iz; i++) {
-        canvas = srcCanvas.cloneNode();
-        this.canvases.push(canvas);
-        this.contexts.push(canvas.getContext('2d'));
-    }
-
-    this.currentBufferIndex = 0;
-    this.drewBufferIndex = 1;
-
-    this.srcCtx.drawImage(img,
-                          x, y, width, height,
-                          0, 0, width, height);
-
-    if (global.Oppai._debug) {
-        document.body.appendChild(this.srcCanvas);
-        for (var j = 0, c; c = this.canvases[j]; j++) {
-            document.body.appendChild(c);
-        }
-    }
-}
-
-DoubleBufferingHandler.prototype = {
-    constructor: DoubleBufferingHandler,
-    getSrcCanvas: function() {
-        return this.srcCanvas;
-    },
-    getDrawBufferCtx: function() {
-        return this.contexts[this.currentBufferIndex];
-    },
-    drawComplete: function() {
-        var drew = this.drewBufferIndex;
-
-        this.drewBufferIndex = this.currentBufferIndex;
-        this.currentBufferIndex = drew;
-    },
-    getDrewCanvas: function() {
-        return this.canvases[this.drewBufferIndex];
-    }
-};
-
-//// export
-global.Oppai.DoubleBufferingHandler = DoubleBufferingHandler;
-
-})(this.self || global, void 0);
-
-;(function(global, undefined) {
-'use strict';
-
-if (!global.Oppai) {
-    throw new Error('Undefined object: "Oppai"');
-}
 var Math = global.Math;
 var STATES = {
         NONE: 0,
@@ -937,3 +874,66 @@ global.Oppai.MotionHandler = MotionHandler;
 
 })(this.self || global, void 0);
 
+
+;(function(global, undefined) {
+'use strict';
+
+if (!global.Oppai) {
+    throw new Error('Undefined object: "Oppai"');
+}
+var document = global.document;
+
+function RenderBufferHandler(img, x, y, width, height) {
+    var srcCanvas = this.srcCanvas = document.createElement('canvas');
+
+    srcCanvas.width = width;
+    srcCanvas.height = height;
+    this.srcCtx = srcCanvas.getContext('2d');
+
+    this.canvases = [];
+    this.contexts = [];
+
+    for (var i = 0, iz = 2, canvas; i < iz; i++) {
+        canvas = srcCanvas.cloneNode();
+        this.canvases.push(canvas);
+        this.contexts.push(canvas.getContext('2d'));
+    }
+
+    this.currentBufferIndex = 0;
+    this.drewBufferIndex = 1;
+
+    this.srcCtx.drawImage(img,
+                          x, y, width, height,
+                          0, 0, width, height);
+
+    if (global.Oppai._debug) {
+        document.body.appendChild(this.srcCanvas);
+        for (var j = 0, c; c = this.canvases[j]; j++) {
+            document.body.appendChild(c);
+        }
+    }
+}
+
+RenderBufferHandler.prototype = {
+    constructor: RenderBufferHandler,
+    getSrcCanvas: function() {
+        return this.srcCanvas;
+    },
+    getDrawBufferCtx: function() {
+        return this.contexts[this.currentBufferIndex];
+    },
+    drawComplete: function() {
+        var drew = this.drewBufferIndex;
+
+        this.drewBufferIndex = this.currentBufferIndex;
+        this.currentBufferIndex = drew;
+    },
+    getDrewCanvas: function() {
+        return this.canvases[this.drewBufferIndex];
+    }
+};
+
+//// export
+global.Oppai.RenderBufferHandler = RenderBufferHandler;
+
+})(this.self || global, void 0);
