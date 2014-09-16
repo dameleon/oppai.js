@@ -108,7 +108,7 @@ function _extend() {
 //// instance methods
 Oppai.prototype = {
     constructor: Oppai,
-    _createAction     : _createAction,
+    _createAnimation  : _createAnimation,
     _init             : _init,
     _initTouchHandler : _initTouchHandler,
     _loadImage        : _loadImage,
@@ -266,9 +266,9 @@ function _swing(x, y, duration) {
     var handler = function(dx, dy) {
             that.moveAll(x - dx, y - dy);
     };
-    var action = this._createAction(duration || 3000, handler);
+    var animaton = this._createAnimation(duration || 3000, handler);
 
-    action.start(
+    animaton.start(
         { start: 0, end: x },
         { start: 0, end: y }
     );
@@ -279,9 +279,9 @@ function _bounce(value, duration) {
     var handler = function(val) {
             that.moveAll(0, value - val);
     };
-    var action = this._createAction(duration || 3000, handler);
+    var animaton = this._createAnimation(duration || 3000, handler);
 
-    action.start({ start: 0, end: value });
+    animaton.start({ start: 0, end: value });
 }
 
 function _roll(value, duration) {
@@ -289,23 +289,23 @@ function _roll(value, duration) {
     var handler = function(val) {
             that.moveAll(value - val, 0);
     };
-    var action = this._createAction(duration || 3000, handler);
+    var animaton = this._createAnimation(duration || 3000, handler);
 
-    action.start({ start: 0, end: value });
+    animaton.start({ start: 0, end: value });
 }
 
-function _createAction(duration, handler, endHandler) {
+function _createAnimation(duration, handler, endHandler) {
     var that = this;
 
-    if (this.action) {
-        this.action.end();
+    if (this.animation) {
+        this.animation.end();
     }
     var _endHandler = function() {
-        that.action = null;
+        that.animation = null;
         endHandler && endHandler();
     };
 
-    return this.action = new Oppai.Action(duration, handler, _endHandler);
+    return this.animation = new Oppai.Animation(duration, handler, _endHandler);
 }
 
 

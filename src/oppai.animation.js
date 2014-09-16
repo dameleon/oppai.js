@@ -8,7 +8,7 @@ var Math = global.Math;
 var Date = global.Date;
 var raf = global.Oppai.requestAnimationFrame;
 
-function Action(duration, handler, endHandler) {
+function Animation(duration, handler, endHandler) {
     this.isPlaying = false;
     this._animate = true;
     this.valueList = [];
@@ -20,8 +20,8 @@ function Action(duration, handler, endHandler) {
     this.currentTime = null;
 }
 
-Action.prototype = {
-    constructor: Action,
+Animation.prototype = {
+    constructor: Animation,
     start: function(/** { start: , end: } */) {
         this.valueList = this.valueList.concat([].slice.call(arguments));
         this.isPlaying = true;
@@ -90,7 +90,7 @@ function __elasticEaseOut(t, b, c, d, a, p){
 }
 
 // export
-global.Oppai.Action = Action;
+global.Oppai.Animation = Animation;
 
 })(this.self || global, void 0);
 
